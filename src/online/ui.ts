@@ -366,7 +366,7 @@ async function viewOffer(id: string): Promise<Kid> {
   };
   return [
     p(btn('BACK', () => open(() => viewProfile(id)))),
-    el('h3', {}, t('Trade with') + ' ' + nm(id)), needLink(),
+    el('h3', {}, t('Trade with') + ' ', el('span', { style: 'text-transform:none' }, nm(id))), needLink(),
     h('You give'),
     el('div', { class: 'evo-cards' }, mine.map(b => card(b, { pick: true, sel: sel.give === b.uid, on: () => { sel.give = sel.give === b.uid ? null : b.uid; render(); } }))),
     p(t('+ money: $'), gm),
@@ -377,10 +377,8 @@ async function viewOffer(id: string): Promise<Kid> {
   ];
 }
 
-function offerText(o: Offer) {
-  const part = (b: Bug | null, m: number) => [b ? b.sNickName : '', b && m ? ' + ' : '', m ? money(m) : ''].join('') || '-';
-  return `${part(o.give_bug, o.give_money)}  ⇄  ${part(o.want_bug, o.want_money)}`;
-}
+const offerPart = (b: Bug | null, m: number) => [b ? t(b.sNickName) : '', b && m ? ' + ' : '', m ? money(m) : ''].join('') || '-';
+const offerText = (o: Offer) => `${offerPart(o.give_bug, o.give_money)} ⇄ ${offerPart(o.want_bug, o.want_money)}`;
 async function viewOffers(): Promise<Kid> {
   const me = sync.uid()!;
   const os = await api.offers();
@@ -399,12 +397,12 @@ async function viewOffers(): Promise<Kid> {
     needLink(),
     h('Offers received'),
     inc.length ? inc.map(o => el('div', { class: 'evo-row', 'data-offer': o.id },
-      el('span', { class: 'grow' }, el('b', {}, nm(o.from_user)), ': ', t('gives'), ' ', offerText(o), ' ', t('(you give the right side)')),
+      el('span', { class: 'grow' }, el('b', {}, nm(o.from_user)), ' ', t('gives:'), ' ', offerPart(o.give_bug, o.give_money), ' — ', t('wants:'), ' ', offerPart(o.want_bug, o.want_money)),
       btn('ACCEPT', () => accept(o), 'ok'), btn('DECLINE', () => api.respondOffer(o.id, false).then(sync.refreshPending), 'no')))
       : p(el('span', { class: 'evo-dim' }, t('None.'))),
     h('Offers sent'),
     out.length ? out.map(o => el('div', { class: 'evo-row', 'data-offer': o.id },
-      el('span', { class: 'grow' }, t('to'), ' ', el('b', {}, nm(o.to_user)), ': ', offerText(o)),
+      el('span', { class: 'grow' }, t('to'), ' ', el('b', {}, nm(o.to_user)), ': ', t('you give'), ' ', offerPart(o.give_bug, o.give_money), ' — ', t('you get'), ' ', offerPart(o.want_bug, o.want_money)),
       btn('CANCEL', async () => { await api.cancelOffer(o.id); await sync.processInbox(); }, 'no')))
       : p(el('span', { class: 'evo-dim' }, t('None.'))),
     old.length ? h('History') : null,
@@ -447,7 +445,7 @@ async function viewChallenge(id: string, kind: 'battle' | 'race'): Promise<Kid> 
   };
   return [
     p(btn('BACK', () => open(() => viewProfile(id)))),
-    el('h3', {}, t(kind === 'battle' ? 'Fight against' : 'Race against') + ' ' + nm(id)), needLink(),
+    el('h3', {}, t(kind === 'battle' ? 'Fight against' : 'Race against') + ' ', el('span', { style: 'text-transform:none' }, nm(id))), needLink(),
     p(el('span', { class: 'evo-dim' }, t(kind === 'battle' ? 'Pick 1 to 3 bugs. Your friend picks the same number.' : 'Pick 1 or 2 bugs. Your friend picks the same number.'))),
     teamPicker(max, null, sel),
     p(t('Bet: $'), bet, ' ', el('span', { class: 'evo-dim' }, t('(the winner takes both bets)'))),
