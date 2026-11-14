@@ -4,6 +4,7 @@ import { frameScripts, clipActions } from './game/timeline';
 import { constructVars } from './game/construct.gen';
 import { addMuteButton } from './game/muteButton';
 import { installI18n } from './game/i18n';
+import { installOnline } from './online';
 
 const BASE = import.meta.env.BASE_URL + 'assets/';
 
@@ -17,6 +18,7 @@ async function boot() {
   p.ctrlRotateDrag = true; // extra: Ctrl + arrastar gira objetos no terrário
   if (import.meta.env.DEV) { (window as any).__player = p; (await import('./devtools')).installDevtools(p); }
   installI18n(); // idioma: navegador/escolha salva; hook de tradução na exibição
+  installOnline(); // v2: amigos, trocas, desafios e presença (só carrega a rede com login)
   p.start();
   addMuteButton(p, stage);
 }
