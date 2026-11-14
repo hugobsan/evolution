@@ -40,8 +40,9 @@ function helpers(page, tag) {
 
 async function open(page, tag) {
   pages.push(page);
-  page.on('console', m => { if (m.type() === 'error') logs.push(tag + ': ' + m.text().slice(0, 300)); });
+  page.on('console', m => { if (m.type() === 'error' || (m.type() === 'warning' && m.text().startsWith('[online]'))) logs.push(tag + ': ' + m.text().slice(0, 300)); });
   page.on('pageerror', e => logs.push(tag + ' pageerror: ' + e.message));
+  page.on('response', async r => { if (r.status() >= 400 && r.url().includes('supabase.co')) logs.push(`${tag} HTTP ${r.status()} ${new URL(r.url()).pathname} ${(await r.text().catch(() => '')).slice(0, 160)}`); });
   await page.goto(URL_);
   await page.waitForFunction(() => window.__player?.root?.mGame?.cur === 6, null, { timeout: 15000 });
   await new Promise(r => setTimeout(r, 1500)); // transição (FADE) bloqueia cliques enquanto roda

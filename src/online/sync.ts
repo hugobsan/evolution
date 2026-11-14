@@ -27,27 +27,33 @@ function gameJSON(): any {
 }
 const sig = (g: any) => JSON.stringify({ ...g, nOnlineRev: 0, aInboxDone: 0 });
 let lastSig = '';
-let pushing = false;
+let chain: Promise<void> = Promise.resolve();
 
-export async function pushNow(force = false) {
-  if (!linked() || pushing || state.conflict) return;
+/** envia o save se mudou (force: envia mesmo igual / sobrescreve após conflito). Envios entram numa fila: um "SYNC NOW"
+ *  durante um envio automático não se perde. */
+export function pushNow(force = false): Promise<void> {
+  const p = chain.then(() => doPush(force));
+  chain = p.catch(() => {});
+  return p;
+}
+async function doPush(force: boolean) {
+  if (!linked() || state.conflict) return;
   const data = gameJSON();
   if (!data) return;
   const s = sig(data);
   if (s === lastSig && !force) return;
-  pushing = true;
   try {
     G().nOnlineRev = await api.pushSave(data, snapshotOf(), G().nOnlineRev | 0, force);
     lastSig = s;
   } catch (e: any) {
     if (e.hint === 'save_conflict') askConflict();
     else console.warn('[online] push', e.message);
-  } finally { pushing = false; }
+  }
 }
 
 function askConflict() {
   state.conflict = true; emit();
-  const p = SFM.addClip('mPop', _root, { sTxt: 'Played on another device!\nLoad the cloud save?', sFrame: 'Y_N' });
+  const p = SFM.addClip('mPop', _root, { sTxt: 'Load newer cloud save?', sFrame: 'Y_N' });
   p.rtFun = async (yes: boolean) => {
     state.conflict = false;
     if (yes) { const s = await api.getSave(); if (s) loadCloud(s); }

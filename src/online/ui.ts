@@ -167,7 +167,10 @@ async function run(f: () => any) {
   try { await f(); } catch (e: any) { msg(e.message || String(e), true); return; }
   render();
 }
-sync.onState(() => { if (ol && !body.contains(document.activeElement)) render(); });
+sync.onState(() => {
+  if (ol && sync.state.conflict) close(); // a pergunta do conflito é um mPop no canvas: o painel não pode cobri-la
+  else if (ol && !body.contains(document.activeElement)) render();
+});
 onLangChange(() => render());
 
 async function nameOf(ids: string[]) {

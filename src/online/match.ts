@@ -106,7 +106,8 @@ function end(G: any, side: 'a' | 'b') {
   if (run.live && m.status === 'accepted' && (me === m.challenger || me === m.opponent))
     txt = me === winnerId ? 'You win!\nYou got $ ' + 2 * m.bet + '!' : 'You lose!\nYou lost $ ' + m.bet + '!';
   else txt = winnerName + ' wins!';
-  if (official && official !== side) txt += '\n(Replay differs. Official: ' + run.names[official === 'a' ? 0 : 1] + ')';
+  // replay divergiu (ex.: outro navegador, §8 do discovery): vale o resultado gravado. O popup tem uma linha só.
+  if (official && official !== side) { txt = 'Official winner: ' + run.names[official === 'a' ? 0 : 1]; console.warn('[online] replay diverged', m.id); }
   (window as any).__lastMatch = { id: m.id, ...result, official }; // testes
   const pop = SFM.addClip('mPop', _root, { sTxt: txt, sFrame: 'WARN' });
   pop.rtFun = function () { _global.FADE(); _global.GAME.mClip?.gotoAndStop('Pause_0'); };
