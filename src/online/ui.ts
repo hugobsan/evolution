@@ -180,6 +180,7 @@ async function nameOf(ids: string[]) {
 }
 const nm = (id: string) => names.get(id) ?? t('(former member)');
 
+const mustLink = () => { if (!sync.linked()) throw new Error('Link this game to your player first.'); };
 function needLink(): Kid {
   return sync.linked() ? null : el('p', { class: 'evo-msg err' }, t('Link this game to your player first.'), ' ', btn('ACCOUNT', () => open(viewAccount, 'account')));
 }
@@ -356,6 +357,7 @@ async function viewOffer(id: string): Promise<Kid> {
   const gm = num('give_money', 'Money you give'), wm = num('want_money', 'Money you want');
   const mine = myBugs();
   const send = async () => {
+    mustLink();
     const give = sel.give ? mine.find(b => b.uid === sel.give)! : null;
     const want = sel.want ? s?.bugs.find(b => b.uid === sel.want) ?? null : null;
     const giveMoney = Math.max(0, +gm.value | 0), wantMoney = Math.max(0, +wm.value | 0);
@@ -387,6 +389,7 @@ async function viewOffers(): Promise<Kid> {
   const os = await api.offers();
   await nameOf(os.flatMap(o => [o.from_user, o.to_user]));
   const accept = async (o: Offer) => {
+    mustLink();
     const mine = o.want_bug ? myBug(o.want_bug.uid) : null;
     if (o.want_bug && !mine) throw new Error('You no longer have that bug.');
     if (o.want_money > G().nMoney) throw new Error("You don't have enough money!");
@@ -437,6 +440,7 @@ async function viewChallenge(id: string, kind: 'battle' | 'race'): Promise<Kid> 
   const bet = el('input', { type: 'number', min: 0, max: 100000, value: (view as any).bet ?? 0, 'aria-label': t('Bet'), id: 'evo-bet',
     oninput: (e: any) => { (view as any).bet = e.target.value; } }) as HTMLInputElement;
   const send = async () => {
+    mustLink();
     const tm = team(sel);
     const b = Math.max(0, +bet.value | 0);
     if (b > G().nMoney) throw new Error('Not enough money to bet this amount!');
@@ -460,6 +464,7 @@ async function viewAccept(m: Match): Promise<Kid> {
   const sel: string[] = (view as any).sel ?? ((view as any).sel = []);
   const n = m.team_a.length;
   const go = async () => {
+    mustLink();
     const tm = team(sel);
     if (tm.length !== n) throw new Error(`Pick exactly ${n} bugs.`);
     if (m.bet > G().nMoney) throw new Error('Not enough money to bet this amount!');
