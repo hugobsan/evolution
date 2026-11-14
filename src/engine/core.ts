@@ -991,7 +991,13 @@ export class Player {
       const f = this.fonts.get(r.font) ?? f0;
       const font = pickFont(this.fonts, f, lines.join(''));
       const st: TextStyle = { font, size: r.h, deviceFamily: f?.cssFamily ?? 'Arial, sans-serif', bold: false };
-      const x = center ? cx - measure(st, ln) / 2 : r.x;
+      // tradução mais larga que o original: reduz para caber na largura dele (máscaras e animações usam essa caixa;
+      // ex.: "Inseto Supremo!" perdia o "I" na tela de vitória)
+      const b = def.bounds, maxW = b ? b[2] - b[0] - 4 : 0;
+      if (center && maxW > 0) { const w = measure(st, ln); if (w > maxW) st.size = r.h * maxW / w; }
+      const wl = measure(st, ln);
+      let x = center ? cx - wl / 2 : r.x;
+      if (center && b) x = Math.max(b[0] + 2, Math.min(x, b[2] - 2 - wl)); // inteira dentro da caixa do original
       ctx.fillStyle = css(colorOf(r.c, cm));
       drawRun(ctx, ln, st, x, i < recs.length ? r.y : recs[recs.length - 1].y + (i - recs.length + 1) * step);
     });
