@@ -228,3 +228,24 @@ port de classes e de scripts de timeline pode ser dividido entre agentes.
   inertes.
 - Manter o save local (SharedObject → localStorage).
 - Registrar ajustes pós-versão 1 num `TODO.md`.
+
+## 8. Camada online sobre um port (lições do multiplayer)
+
+- **Ligue o online por fora do port**: embrulhe os frame scripts das telas (o registro de scripts é consultado em
+  tempo de execução) e métodos do protótipo das classes portadas, em vez de editar a lógica fiel. O port continua
+  comparável ao original e a camada nova fica num diretório só.
+- **Replay determinístico**: se a simulação usa só `Math.random`, troque-o por um PRNG semeado (seed gravada no
+  servidor) apenas *em volta* do passo da simulação (`init` + `run()`), e restaure logo depois. Assim transições e
+  efeitos visuais não consomem a sequência. Simulação por passos (não por tempo) deixa acelerar/pular sem mudar o
+  resultado. Risco: `Math.sin/cos/atan2` podem diferir entre motores JS; grave o resultado oficial e compare no replay.
+- **Formulários e listas em HTML sobreposto**, desenhados nas coordenadas do palco (ex.: 640×480) com
+  `transform: scale()` acompanhando o canvas; pare a propagação dos eventos de ponteiro e pause o jogo enquanto aberto.
+  Popups do canvas não podem ficar escondidos atrás do overlay (feche-o quando o jogo precisar perguntar algo).
+- Campos de texto reaproveitados de popups do SWF costumam ser de **uma linha**: `\n` não quebra; mantenha os textos
+  curtos e confira na tradução.
+- **Save na nuvem**: reaproveite a serialização do SharedObject (grave e leia o próprio item do `localStorage`) para
+  o formato ficar idêntico ao local. Revisão no servidor detecta dois aparelhos; o que muda o save de outra pessoa
+  (trocas, prêmios) vira uma "entrega" aplicada pelo cliente e marcada no próprio save (idempotente).
+- **Testes multiusuário**: um contexto de navegador por jogador; espere o render assíncrono terminar antes de
+  preencher campos (um atributo `data-busy` no painel resolve); force o idioma para os seletores; lembre do rate
+  limit do provedor de auth ao criar muitos usuários de teste.
