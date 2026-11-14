@@ -53,7 +53,7 @@ function accountScreen(mc: MC) {
   const redo = () => accountScreen(mc);
   const X = 5;
   label(c, X, 88, 'ONLINE ACCOUNT', { size: 18 });
-  button(c, X, 390, 'SETTINGS', () => buildSettings(mc)); // volta à tela base ('BACK' é ancorado à direita na tradução)
+  button(c, X, 390, 'SETTINGS', () => buildSettings(mc)).name = 'btAccBack'; // volta à tela base ('BACK' é ancorado à direita na tradução); ESC também
   if (!api.session) {
     label(c, X, 125, 'Name:', { size: 15 });
     const name = input(c, X, 147, 150, 16, '^<>&"', localName());

@@ -16,6 +16,7 @@ import { friendsView, profileView } from './friends';
 import { pvpView } from './pvp';
 import { tradeView } from './trade';
 import * as creation from './creation';
+import { installEscape } from '../game/escape';
 
 function screen(mc: any, kind: 'home' | 'arena' | 'shop' | 'match' | 'menu') {
   // botão SPEED do HUD (434:38:199): o tempo só passa no insetário; na loja/arena/disputa ele não faz nada
@@ -38,6 +39,7 @@ async function boot() {
 }
 
 export function installOnline() {
+  installEscape(); // ESC fecha/volta a tela aberta (todo jogo, com ou sem multiplayer)
   installIcons();
   const wrap = (sprite: number, fr: number, after: (mc: any) => void) => {
     const f = frameScripts[sprite][fr];
