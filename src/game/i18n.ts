@@ -95,7 +95,7 @@ const EXACT: Record<string, string> = {
   'Only 12 bugs you can fed!': 'Você só pode alimentar 12 insetos!',
   'The bug is not old enough to breed!': 'O inseto ainda é novo demais para cruzar!',
   'The bug is too old enough to breed!': 'O inseto é velho demais para cruzar!',
-  'Enter a name please!': 'Digite um nome, por favor!', 'The bug is unhappy!': 'O inseto está infeliz!',
+  'Enter a name please!': 'Digite um nome, por favor!', 'The bug is unhappy!': 'O inseto está infeliz!', 'Drag the bug to select it!': 'Arraste o inseto para selecioná-lo!',
   "You don't have enough money!": 'Você não tem dinheiro suficiente!', 'You have too many toys!': 'Você tem brinquedos demais!',
   'Please select at least one bug!': 'Selecione pelo menos um inseto!', 'Bet too high!': 'Aposta alta demais!',
   'Not enough money to bet this amount!': 'Dinheiro insuficiente para essa aposta!',

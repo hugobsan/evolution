@@ -1216,6 +1216,7 @@ export class Player {
         if (this.pinch || (this.touches.size === 2 && this.startPinch())) { e.preventDefault(); return; }
       }
       pos(e);
+      this.pointerType = e.pointerType; // 'touch' | 'mouse' | 'pen' ('' em cliques simulados): o jogo diferencia o toque
       this.audio.resume();
       if (document.activeElement instanceof HTMLInputElement) document.activeElement.blur();
       this.run(() => {
@@ -1328,6 +1329,8 @@ export class Player {
     this.updateDrag();
   }
   stopDrag() { this.drag = null; }
+  /** tipo do ponteiro do último pressionar (extensão): no celular o toque não tem hover */
+  pointerType = '';
   /** extensão (não existe no Flash): Ctrl + mover o mouse na vertical gira o objeto arrastado */
   ctrlRotateDrag = false;
   private ctrlDown = false;
@@ -1369,17 +1372,29 @@ export class Player {
     const el = document.createElement('input');
     el.type = t.password ? 'password' : 'text';
     el.value = t.text;
-    // nomes, códigos e valores: sem maiúscula automática, correção ou sugestão do teclado do celular
+    // teclado do celular: sem correção/sugestão (nomes e códigos); códigos e valores (restrict positivo, ex. A-Za-z0-9)
+    // também sem maiúscula automática; nomes (restrict negado, ex. ^<>&") mantêm a do teclado
     el.spellcheck = false;
     el.autocomplete = 'off';
-    el.setAttribute('autocapitalize', 'off');
     el.setAttribute('autocorrect', 'off');
+    if (t.restrict && t.restrict[0] !== '^') el.setAttribute('autocapitalize', 'off');
     if (t.restrict === '0-9') el.inputMode = 'numeric';
+    if (t.maxChars) el.maxLength = t.maxChars; // antes do foco (mudar atributo do campo focado mexe no teclado)
     Object.assign(el.style, {
       position: 'absolute', border: 'none', outline: 'none', background: 'transparent', padding: '0 2px', margin: '0',
       boxSizing: 'border-box', zIndex: '10',
     } as CSSStyleDeclaration);
+    // Chrome + Gboard (Android): no campo vazio focado pelo jogo, a 1ª letra entra e o cursor fica ANTES dela
+    // (log do aparelho: beforeinput insertText "h" sel=0 → input "h" sel=0, sem nenhuma escrita do motor), e o resto
+    // entra antes ("hugo" → "ugoh"). Guarda onde a inserção deve deixar o cursor e o repõe se o navegador errar.
+    let want: { at: number; data: string } | null = null;
+    el.addEventListener('beforeinput', e => {
+      want = e.inputType === 'insertText' && e.data && !e.isComposing ? { at: (el.selectionStart ?? el.value.length) + e.data.length, data: e.data } : null;
+    });
     const onInput = (e: Event) => {
+      const w = want; want = null;
+      if (w && !(e as InputEvent).isComposing && el.selectionStart === el.selectionEnd && el.selectionStart !== w.at &&
+        el.value.slice(w.at - w.data.length, w.at) === w.data) el.setSelectionRange(w.at, w.at);
       let v = el.value;
       if (t.restrict) { const re = new RegExp('[' + t.restrict + ']'); v = [...v].filter(ch => re.test(ch)).join(''); }
       if (t.maxChars) v = v.slice(0, t.maxChars);

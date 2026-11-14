@@ -15,6 +15,7 @@ import {
 } from '../engine/as2';
 import { Game } from './classes/Game';
 import { Ico } from './classes/Ico';
+import { touchPick, inBounds } from './touchPick';
 import { SFM } from './classes/SFM';
 import { Mask } from './classes/Mask';
 import { Mycolor } from './classes/Mycolor';
@@ -108,6 +109,23 @@ function addIco(mc: any, slot: any, id: any, side: any, idx: any, color: any) {
   t.setClip(SFM.addClip("mIco", mc));
   t.owner = mc;
   return t;
+}
+
+/** novo (celular): nos popups de luta/corrida, tocar no besouro mostra os atributos; arrastar até os slots mC_*
+ *  (grupo dos selecionados) seleciona, arrastar de volta tira. Com o mouse o clique continua selecionando. */
+function touchSelect(mc: any) {
+  for (const c of mc.children) {
+    const ico = c.owner;
+    if (!(ico instanceof Ico) || ico.nSide !== 0) continue;
+    touchPick(c, {
+      clip: c,
+      info: () => _global.GAME?.rtRollOver(ico),
+      isSel: () => ico.mClip?._x != ico.vCurr?.x,
+      inDrop: (x, y) => inBounds([mc.mC_0, mc.mC_1, mc.mC_2], x, y, 20),
+      toggle: () => _global.GAME?.rtClick(ico),
+      hint: () => { if (!mc.$dragHint) { mc.$dragHint = true; _global.GAME?.popWord("Drag the bug to select it!"); } },
+    });
+  }
 }
 
 // sprites 5 / 76 (texto): Replace() + resolução de sTxt
@@ -565,6 +583,7 @@ export const frameScripts: FrameScripts = {
       for (const k of forIn(mc.ob?.aBug_have)) {
         addIco(mc, mc["mS_" + k], mc.ob.aBug_have[k], 1, Number(k), mc.ob.aBug_color?.[k]);
       }
+      touchSelect(mc);
       typingLater(mc, 5, "0-9");
     },
     15: (mc) => {
@@ -579,6 +598,7 @@ export const frameScripts: FrameScripts = {
         if (mc.ob?.aBug_have?.[i] != null) addIco(mc, mc["mS_" + i], mc.ob.aBug_have[i], 1, Number(i), mc.ob.aBug_color?.[i]);
         i++;
       }
+      touchSelect(mc);
       typingLater(mc, 5, "0-9");
     },
   },

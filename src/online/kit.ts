@@ -7,6 +7,7 @@ import { _global, _root, GlowFilter, ColorMatrixFilter } from '../engine/as2';
 import { Game } from '../game/classes/Game';
 import { Adult } from '../game/classes/Adult';
 import { getLang, tr, onLangChange } from '../game/i18n';
+import { touchPick } from '../game/touchPick';
 
 export type MC = any;
 export const t = (s: string) => (getLang() === 'pt' ? tr(s, false) : s);
@@ -230,7 +231,7 @@ export function bugSlot(p: MC, x: number, y: number, b: { nId: number; nId_color
   const slot = p.attachSymbol(59, 's' + nd(p), nd(p), {}, false);
   slot._x = x; slot._y = y; slot._xscale = slot._yscale = k;
   if (o.sel) slot.filters = [new GlowFilter(0x00ccff, 1, 6, 6, 4)];
-  if (b) bugIcon(p, x, y, b.nId, b.nId_color, k);
+  if (b) slot.ico = bugIcon(p, x, y, b.nId, b.nId_color, k);
   if (o.on) slot.onRelease = () => act(o.on!);
   if (o.over) slot.onRollOver = () => act(o.over!);
   if (!o.on) slot.useHandCursor = false;
@@ -272,7 +273,10 @@ export function tabs(v: MC, items: { k: string; label: string; n?: number }[], c
 }
 
 /** grade de slots de besouros (clique alterna seleção; rollover mostra os atributos) */
-export interface GridOpts { cols?: number; total?: number; pitch?: number; scale?: number; sel?: string[]; on?: (b: any) => void; over?: (b: any) => void }
+/** `drop` (com `on` e `over`): no celular tocar mostra os atributos e arrastar até a área `drop` (ponto do palco) seleciona,
+ *  arrastar um selecionado para fora tira; o mouse continua clicando */
+export interface GridOpts { cols?: number; total?: number; pitch?: number; scale?: number; sel?: string[]; on?: (b: any) => void; over?: (b: any) => void; drop?: (x: number, y: number) => boolean }
+let hinted = false; // dica de arrastar: uma vez por sessão
 export function bugGrid(v: MC, bugs: any[], x: number, y: number, o: GridOpts = {}) {
   const cols = o.cols ?? 4, total = o.total ?? 12, pitch = o.pitch ?? 70, scale = o.scale ?? 100;
   for (let i = 0; i < total; i++) {
@@ -282,6 +286,10 @@ export function bugGrid(v: MC, bugs: any[], x: number, y: number, o: GridOpts = 
       scale, sel: !!b && !!o.sel?.includes(b.uid), on: b && o.on ? () => o.on!(b) : undefined, over: b && o.over ? () => o.over!(b) : undefined,
     });
     if (b) s.name = (o.on ? 'slot_' : 'bug_') + b.uid; // slot_ = clicável (testes), bug_ = só leitura
+    if (b && o.drop && o.on && o.over && s.ico) touchPick(s, {
+      clip: s.ico, info: () => act(() => o.over!(b)), isSel: () => !!o.sel?.includes(b.uid), inDrop: o.drop, toggle: () => act(() => o.on!(b)),
+      hint: () => { if (!hinted) { hinted = true; flash('Drag the bug to select it!'); } },
+    });
   }
 }
 

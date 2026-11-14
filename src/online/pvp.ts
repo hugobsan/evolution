@@ -10,6 +10,7 @@ import type { Bug, Match } from './api';
 import * as sync from './sync';
 import { online } from './shop';
 import { bugOf, myBug, battleOb } from './bugs';
+import { inBounds } from '../game/touchPick';
 import { View, MC, label, button, panel, input, tabs, bugGrid, infoBox, show, refresh, flash, money, t, close } from './kit';
 import { nameOf, nm, watch } from './friends';
 import { dot } from './world';
@@ -139,9 +140,11 @@ function composeView(id: string, kind: 'battle' | 'race'): View {
           show(cv);
         },
         over: b => box?.setFrame?.('battle', battleOb(b)),
+        drop: (x, y) => inBounds([teamPanel], x, y), // celular: arrastar até o painel do time escolhe
       });
+      let teamPanel: MC;
       grid();
-      panel(v, 340, 92, 280, 240);
+      teamPanel = panel(v, 340, 92, 280, 240);
       label(v, 354, 104, kind === 'battle' ? 'Pick 1 to 3 bugs. Your friend picks the same number.' : 'Pick 1 or 2 bugs. Your friend picks the same number.', { w: 252, size: 14 });
       label(v, 354, 190, `${t('Your team')}: ${state.sel.length}/${max}`, { size: 15 });
       label(v, 354, 226, 'Bet: $', { size: 15 });

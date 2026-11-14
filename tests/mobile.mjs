@@ -39,7 +39,19 @@ export default async (desk) => {
   ok(await ev(() => __player.root.mGame.cur) === 30, 'tela do nome do jogador');
   const inp = page.locator('#stage input');
   await inp.tap();
-  ok(await ev(() => { const e = document.querySelector('#stage input'); return e.getAttribute('autocapitalize') === 'off' && e.getAttribute('autocorrect') === 'off' && !e.spellcheck; }), 'campo sem autocapitalize/autocorrect/spellcheck');
+  ok(await ev(() => { const e = document.querySelector('#stage input'); return !e.hasAttribute('autocapitalize') && e.getAttribute('autocorrect') === 'off' && !e.spellcheck && e.maxLength === 8; }), 'nome: maiúscula do teclado mantida, sem autocorrect/spellcheck, maxlength desde a criação');
+  // sequência do log do aparelho (Poco X7 Pro, Chrome 157, Gboard): no campo vazio a 1ª letra entra e o navegador
+  // deixa o cursor ANTES dela (beforeinput insertText "h" sel=0 → input "h" sel=0); sem correção vira "ugoh"
+  await ev(() => {
+    const e = document.querySelector('#stage input');
+    e.dispatchEvent(new InputEvent('beforeinput', { inputType: 'insertText', data: 'h', cancelable: true }));
+    e.value = 'h'; e.setSelectionRange(0, 0); // o que o Chrome do aparelho fez
+    e.dispatchEvent(new InputEvent('input', { inputType: 'insertText', data: 'h' }));
+  });
+  for (const ch of 'ugo') await page.keyboard.type(ch);
+  let s0 = await ev(() => { const e = document.querySelector('#stage input'); return { v: e.value, s: e.selectionStart }; });
+  ok(s0.v === 'hugo' && s0.s === 4, 'sequência do log (cursor antes da 1ª letra) corrigida: ' + JSON.stringify(s0));
+  await ev(() => { const e = document.querySelector('#stage input'); e.value = ''; e.dispatchEvent(new Event('input')); });
   // conta mudanças no <input> focado enquanto digita (o motor não deve reescrever nada a cada frame)
   await ev(() => { const e = document.querySelector('#stage input'); window.__muts = 0; new MutationObserver(m => { window.__muts += m.length; }).observe(e, { attributes: true, attributeFilter: ['maxlength', 'value', 'autocapitalize'] }); });
   const st = () => ev(() => { const e = document.querySelector('#stage input'); return { v: e.value, s: e.selectionStart, t: __player.root.mGame.zName.tTxt.text }; });
