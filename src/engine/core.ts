@@ -363,7 +363,10 @@ export class TextField extends DisplayObject {
   }
   private st: TextStyle | null = null;
   /** texto exibido: o do jogo passado pelo hook de tradução (se houver) */
-  private shown(): string { return textHook?.field && this.src ? textHook.field(this.src, this.srcHtml) : this.src; }
+  private shown(): string {
+    const s = as2Digits(this.src);
+    return textHook?.field && s ? textHook.field(s, this.srcHtml) : s;
+  }
   style(): TextStyle { this.getLines(); return this.st!; }
   get text(): string {
     this.syncVar();
@@ -1340,6 +1343,12 @@ export class Player {
       if (document.activeElement !== el && el.value !== t.text) el.value = t.text;
     }
   }
+}
+
+/** AS2 converte Number→String com 15 dígitos significativos (126.3), JS com 17 (126.30000000000001).
+ *  Na exibição, normaliza decimais longos para o formato do Flash. */
+function as2Digits(s: string): string {
+  return s && /\d\.\d{12,}/.test(s) ? s.replace(/\d+\.\d{12,}/g, m => String(parseFloat(Number(m).toPrecision(15)))) : s;
 }
 
 function fxSig(fx: any[]): string {

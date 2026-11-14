@@ -1,4 +1,6 @@
-name: Deploy v1 (GitHub Pages)
+name: Deploy v1 + v2 (GitHub Pages)
+# v1 (branch main) na raiz e v2 multiplayer (branch v2) em /v2/, no mesmo site.
+# Mudou só a v2? Rode este workflow manualmente (Actions → Run workflow): ele sempre builda as duas branches.
 on:
   push:
     branches: [main]
@@ -18,12 +20,26 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/checkout@v4
+        with:
+          ref: v2
+          path: v2src
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npm run build
+          cache-dependency-path: |
+            package-lock.json
+            v2src/package-lock.json
+      - name: Build v1
+        run: npm ci && npm run build
+      - name: Build v2 em /v2/
+        run: |
+          cd v2src && npm ci && npm run build && cd ..
+          rm -f v2src/dist/CNAME
+          mkdir -p dist/v2 && cp -r v2src/dist/. dist/v2/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

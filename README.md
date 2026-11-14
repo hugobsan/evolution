@@ -12,7 +12,7 @@ Canvas 2D + WebAudio que interpreta os assets extraídos do SWF.
 Estrutura: `src/engine/` (motor: display list, render, texto, áudio, AS2), `src/game/` (classes e scripts portados
 do jogo), `tools/extract.py` (SWF → `public/assets`), `docs/` (guia de port SWF → web e contrato do port).
 
-Versões: `main` = v1 (offline). Branch `v2` = multiplayer (em desenvolvimento).
+Versões: `main` = v1 (offline), em https://evolution.hugobsan.com.br. Branch `v2` = multiplayer, em https://evolution.hugobsan.com.br/v2/ (o deploy builda as duas; mudou só a v2, rode o workflow manualmente).
 
 ## v2 — multiplayer entre amigos (branch `v2`)
 

@@ -190,6 +190,7 @@ const PATTERNS: [RegExp, (...m: string[]) => string][] = [
   [/^SYNC BUGS SPEED: (ON|OFF)$/, (_, n) => `SINCRONIZAR VELOCIDADE: ${n == 'ON' ? 'SIM' : 'NÃO'}`],
   [/^Bug (\d+)$/, (_, n) => `Inseto ${n}`],
   [/^([\d.]+) Days$/, (_, n) => `${dec(n)} Dias`],
+  [/^([\d.]+) days$/, (_, n) => `${dec(n)} dias`],
   [/^Happiness \+(.+)$/, (_, n) => `Felicidade +${n}`],
   [/^((?:(?:Hunger|Happiness|Health|Growth)[+-][\d.]+\.?\s*)+)$/, (_, s) =>
     s.replace(/Hunger/g, 'Fome').replace(/Happiness/g, 'Felicidade').replace(/Health/g, 'Saúde').replace(/Growth/g, 'Crescimento')],
