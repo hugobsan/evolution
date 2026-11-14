@@ -868,6 +868,12 @@ export const frameScripts: FrameScripts = {
       const setFrame0 = mc.setFrame;
       mc.setFrame = function (_s: any, _ob: any) {
         setFrame0(_s, _ob);
+        // v2: o painel de info recuou 19 px (online/hud.ts INFO_RIGHT 455→436); as barras encolhem junto
+        for (const bar of mc.children) if (bar.spriteId === 355 && !bar.__narrow) {
+          bar.__narrow = true;
+          bar.nWidth = (Number(bar.nWidth) || bar._width) - 19;
+          bar.replace?.();
+        }
         if (_s === "battle") {
           // novo: na corrida mostra o tamanho (escala do besouro, 10 + nGrow × 0,025) no lugar do sexo
           if (_global.GAME?.pSell?.nBattle === -1) {

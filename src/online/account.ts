@@ -43,9 +43,10 @@ export function buildSettings(mc: MC) {
       redo();
     });
     label(c, X, Y + 62, 'Recovery code:', { size: 15 });
-    const code = input(c, X + 172, Y + 60, 250, 32, 'A-Za-z0-9-');
+    // campo na linha de baixo do rótulo (a largura do rótulo muda com o idioma)
+    const code = input(c, X, Y + 84, 250, 32, 'A-Za-z0-9-');
     code.name = 'inRecover';
-    button(c, X, Y + 90, 'RECOVER', async () => {
+    button(c, X + 262, Y + 84, 'RECOVER', async () => {
       await api.recover(code.value());
       await hooks.login();
       redo();
