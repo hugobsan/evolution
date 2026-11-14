@@ -8,6 +8,8 @@ const G = () => _global.GAME;
 export const uid = () => api.session?.user.id;
 /** o jogo aberto está vinculado à conta logada? (só então entregas/envio de save/trocas valem) */
 export const linked = () => !!uid() && G()?.sOnlineUid === uid();
+/** o jogo aberto foi criado com o multiplayer ligado? (sem isso, nenhuma interface do multiplayer aparece) */
+export const mpGame = () => !!G()?.sOnlineUid;
 
 // ── estado observado pela UI (contador do botão ONLINE, painel) ──
 export const state = { pending: 0, offers: 0, challenges: 0, conflict: false, friends: new Map<string, api.Profile>(), world: null as api.World | null };
@@ -15,7 +17,7 @@ const subs = new Set<() => void>();
 export const onState = (f: () => void) => { subs.add(f); return () => subs.delete(f); };
 export const emit = () => subs.forEach(f => f());
 
-export function popWord(s: string) { if (s && G()?.mClip) G().popWord(s); }
+export function popWord(s: string) { if (s && G()?.mClip && mpGame()) G().popWord(s); }
 
 // ── save ──
 /** o GAME exatamente como a v1 grava no SharedObject (sem clips nem funções) */

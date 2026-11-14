@@ -96,5 +96,31 @@ export default async (page, h) => {
   const again = await b.h.ev(async () => { const os = await __online.api.offers(); try { await __online.api.respondOffer(os.find(o => o.status !== 'pending').id, true); return 'aceitou'; } catch (e) { return e.message; } });
   console.log('reaceitar oferta resolvida:', again);
   if (again === 'aceitou') throw new Error('oferta resolvida foi aceita de novo');
-  console.log('ok: venda, compra (recusa e aceite) e cancelamento');
+
+  // 4) troca 2 por 1: Bob dá os dois besouros dele e pede a Hawaii da Ana
+  await shut(b);
+  const bobs = await b.h.ev(() => __player.global.GAME.aAdult.map(x => { x.nAge_now = Math.max(x.nAge_now, 300); return x.sUid ?? (x.sUid = crypto.randomUUID()); }));
+  await a.h.ev(async () => { await __online.sync.pushNow(true); }); // insetário da Ana (com a Hawaii) no resumo público
+  await toTrade(b);
+  await tap(b.h, 'TRADE WITH A FRIEND');
+  await tapName(b.h, 'offer_' + aId);
+  for (const u of [...bobs, hawaii]) await pick(b.h, u);
+  await b.h.ev(async () => { // rollover: atributos na caixa preta de info
+    const v = __player.root.mGame.mOnline.v; const o = v.children.find(c => c.name?.startsWith('slot_')); const b = o.getBounds(); const c = __player.canvas; const r = c.getBoundingClientRect();
+    c.dispatchEvent(new PointerEvent('pointermove', { clientX: r.left + (b.xMin + b.xMax) / 2, clientY: r.top + (b.yMin + b.yMax) / 2, bubbles: true })); await __sleep(400); });
+  await b.h.shot(OUT + 'trade-5-multi.png');
+  await tap(b.h, 'SEND OFFER', 1200);
+  await until(b.h, () => __player.global.GAME.aAdult.length === 0);
+  await shut(b);
+  await a.page.waitForFunction(() => __online.sync.state.offers > 0, null, { timeout: 15000 });
+  await toTrade(a);
+  await tap(a.h, 'OFFERS');
+  await a.h.shot(OUT + 'trade-5-multi-received.png');
+  await tap(a.h, 'ACCEPT', 1200);
+  await until(a.h, us => us.every(u => __player.global.GAME.aAdult.some(x => x.sUid === u)), bobs);
+  await until(b.h, u => __player.global.GAME.aAdult.some(x => x.sUid === u), hawaii);
+  const [ga4, gb4] = [await game(a.h), await game(b.h)];
+  console.log('2 por 1: Ana', JSON.stringify(ga4), 'Bob', JSON.stringify(gb4));
+  if (ga4.bugs.length !== 3 || gb4.bugs.length !== 1) throw new Error('troca 2 por 1 não fechou certo');
+  console.log('ok: venda, compra (recusa e aceite), cancelamento e troca 2 por 1');
 };

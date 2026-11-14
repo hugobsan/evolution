@@ -13,7 +13,7 @@ export type SellBug = Bug & { price: number };
 export type Snapshot = { user_id: string; money: number; level: number; days: number; score: number; have: number[]; bugs: Bug[]; selling: number; sell: SellBug[]; updated_at: string };
 export type World = { id: string; code: string; owner: string };
 export type Offer = {
-  id: number; from_user: string; to_user: string; give_bug: Bug | null; give_money: number; want_bug: Bug | null; want_money: number;
+  id: number; from_user: string; to_user: string; give_bugs: Bug[]; give_money: number; want_bugs: Bug[]; want_money: number;
   status: 'pending' | 'accepted' | 'declined' | 'cancelled'; created_at: string;
 };
 export type Match = {
@@ -181,10 +181,10 @@ export const joinWorld = (code: string) => rpc('join_world', { p_code: code });
 export const leaveWorld = () => rpc('leave_world');
 export const kickMember = (uid: string) => rpc('kick_member', { p_user: uid });
 export const endWorld = () => rpc('end_world');
-export const createOffer = (to: string, giveBug: Bug | null, giveMoney: number, wantBug: Bug | null, wantMoney: number) =>
-  rpc('create_offer', { p_to: to, p_give_bug: giveBug, p_give_money: giveMoney, p_want_bug: wantBug, p_want_money: wantMoney }) as Promise<number>;
-export const respondOffer = (id: number, accept: boolean, wantBug: Bug | null = null) =>
-  rpc('respond_offer', { p_id: id, p_accept: accept, p_want_bug: wantBug });
+export const createOffer = (to: string, giveBugs: Bug[], giveMoney: number, wantBugs: Bug[], wantMoney: number) =>
+  rpc('create_offer', { p_to: to, p_give_bugs: giveBugs, p_give_money: giveMoney, p_want_bugs: wantBugs, p_want_money: wantMoney }) as Promise<number>;
+export const respondOffer = (id: number, accept: boolean, wantBugs: Bug[] = []) =>
+  rpc('respond_offer', { p_id: id, p_accept: accept, p_want_bugs: wantBugs });
 export const cancelOffer = (id: number) => rpc('cancel_offer', { p_id: id });
 export const createMatch = (to: string, kind: 'battle' | 'race', bet: number, team: Bug[]) =>
   rpc('create_match', { p_to: to, p_kind: kind, p_bet: bet, p_team: team }) as Promise<number>;

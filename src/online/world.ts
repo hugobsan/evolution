@@ -40,9 +40,9 @@ export const worldView: View = {
     if (!sync.linked()) label(v, 20, 420, 'This game is not linked to your player yet: see the game settings (ONLINE ACCOUNT).', { size: 13, color: 0x8a1a1a, w: 600 });
     if (!d?.w) {
       panel(v, 40, 70, 560, 150);
-      label(v, 60, 82, 'Enable multiplayer', { size: 20 });
+      label(v, 60, 82, 'Create a world', { size: 20 });
       label(v, 60, 112, `Create a world and share its code with up to ${WORLD_MAX - 1} friends.`, { w: 520, size: 15 });
-      button(v, 60, 180, 'ENABLE MULTIPLAYER', async () => { await api.createWorld(); await sync.refreshPending(); refresh(); });
+      button(v, 60, 180, 'CREATE WORLD', async () => { await api.createWorld(); await sync.refreshPending(); refresh(); });
       panel(v, 40, 240, 560, 150);
       label(v, 60, 252, 'Join a world', { size: 20 });
       label(v, 60, 285, 'World code:', { size: 15 });

@@ -31,6 +31,12 @@ export function stats(b: Bug) {
   };
 }
 
+/** objeto que o painel de info do jogo (sprite 356, frame "battle") lê: ataque/velocidade/HP em barras */
+export function battleOb(b: Bug) {
+  const st = stats(b);
+  return { sNickName: b.sNickName, nAge_now: b.nAge_now, nSex: b.nSex, nPower: st.attack, nFly: st.speed, nHp: st.hp, nGrow: b.nGrow, nRandom: b.nRandom };
+}
+
 /** besouro da lista de venda (aAdult_sell) → resumo com preço; o v1 só guarda alguns atributos: o resto fica no padrão */
 export function sellBugOf(a: any): Bug & { price: number } {
   uidOf(a); // a identidade fica no próprio item da lista (vai no save)

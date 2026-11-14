@@ -55,7 +55,7 @@ try {
   const h = await open(first, 'p0');
   const mod = await import(pathToFileURL(process.argv[2]).href);
   await mod.default(first, h);
-} catch (e) { console.log('FALHA:', e.message); code = 1; }
+} catch (e) { console.log('FALHA:', e.message, (e.stack || '').split('\n').filter(l => l.includes('/tests/') && !l.includes('harness')).slice(0, 3).map(l => l.trim()).join(' | ')); code = 1; }
 const errs = [];
 for (const pg of pages) errs.push(...await pg.evaluate(() => window.__errs || []).catch(() => ['(página travada)']));
 console.log('erros do jogo:', JSON.stringify(errs.slice(0, 10), null, 1));

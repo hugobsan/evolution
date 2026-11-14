@@ -237,6 +237,23 @@ export function bugSlot(p: MC, x: number, y: number, b: { nId: number; nId_color
   return slot;
 }
 
+/** caixa preta de info do HUD dentro da tela: os mesmos clips (fundo e moldura do sprite 350 + painel 356), na mesma
+ *  posição; devolve o painel (setFrame('battle', ...) mostra os atributos em barras, como na arena) */
+export function infoBox(v: MC): MC | null {
+  const mg = _root?.mGame;
+  const bar = mg?.children.find((c: MC) => c.spriteId === 350), src = mg?.mInfo;
+  if (!bar || !src) return null;
+  for (const c of bar.children) if (c.spriteId === 239 || c.spriteId === 348) {
+    const k = v.attachSymbol(c.spriteId, 'ib' + nd(v), nd(v), {}, false);
+    k._x = bar._x + c._x * bar._xscale / 100; k._y = bar._y + c._y * bar._yscale / 100;
+    k._xscale = c._xscale * bar._xscale / 100; k._yscale = c._yscale * bar._yscale / 100;
+    if (c.cx) k.cx = [...c.cx]; // o fundo preto é o 239 com cor multiplicada por 0
+  }
+  const i = v.attachSymbol(356, 'mInfoBox', nd(v), {}, false);
+  i._x = src._x; i._y = src._y; i._xscale = src._xscale; i._yscale = src._yscale;
+  return i;
+}
+
 /** info (painel inferior do jogo) por rollover */
 export const info = (s0: string, s1 = '', s2 = '') => G()?.mClip?.mInfo?.setFrame?.('txt', { s_0: s0, s_1: s1, s_2: s2 });
 export const cyan = (s: string) => _global.TXTCOLOR('00ccff', s);

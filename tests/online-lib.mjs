@@ -9,7 +9,8 @@ const HUD = { world: 'btWorld', friends: 'btFriends', pvp: 'btPvp', trade: 'btTr
 
 /** espera a tela terminar de carregar os dados e desenhar */
 export const idle = async page => { await page.waitForFunction(() => !__online.kit.isBusy(), null, { timeout: 15000 }); await page.waitForTimeout(250); };
-export const dismissHints = h => h.ev(() => { __player.root.children.filter(c => c.name.startsWith('mFirst')).forEach(c => c.removeMovieClip()); });
+// dicas iniciais (mFirst): o jogo cria dentro do mGame
+export const dismissHints = h => h.ev(() => { for (const p of [__player.root, __player.root.mGame]) p.children.filter(c => c.name.startsWith('mFirst')).forEach(c => c.removeMovieClip()); });
 /** clica no botão (rótulo em inglês) da tela atual; erro se não existir */
 export async function tap(h, label, wait = 900) {
   await idle(h.page);
@@ -25,6 +26,7 @@ export const waitBtn = (h, label, ms = 15000) => h.page.waitForFunction(l => !!_
 export const waitTxt = (h, name, ms = 15000) => h.page.waitForFunction(n => __txt(n) != null, name, { timeout: ms });
 /** abre uma tela do multiplayer pelo botão do HUD */
 export async function openScreen(h, id) {
+  await dismissHints(h); // o balão de tutorial do jogo reaparece sozinho e bloqueia o clique no HUD
   await h.ev(async n => { await __clickObj(__player.root.mGame[n], 1400); }, HUD[id]);
   await idle(h.page);
 }
@@ -35,31 +37,47 @@ export async function openSettings(h) {
 }
 export const closeSettings = h => h.ev(async () => { await __btn('RETURN TO GAME'); await __sleep(900); });
 
-/** novo jogo + jogador online (só o nome, nas Configurações); o jogo é vinculado sozinho no 1º acesso. Devolve { name, code } */
+/** tela de criação do jogo (instruções) com o toggle MULTIPLAYER ligado e as opções carregadas */
+export async function toCreation(h, player) {
+  await h.ev(async () => { await __btn('PLAY GAME'); });
+  if (await h.ev(() => __player.root.mGame.cur) === 30) {
+    await h.page.fill('#stage input', player);
+    await h.ev(async () => { await __btn('OK'); });
+  }
+  await h.ev(async () => { await __btn('NEW GAME'); await __sleep(900); });
+  await h.ev(async () => { __player.root.mGame.mMp.mToggle.onRelease(); });
+  await h.page.waitForFunction(() => !!(__find('START GAME') && (__txt('inMpName') != null || __txt('inMpWorld') != null || __find('LOAD CLOUD SAVE') || __find('SIGN OUT'))), null, { timeout: 15000 });
+  await h.sleep(300);
+}
+
+/** novo jogo com o multiplayer ligado na criação (nome online; mundo novo). Devolve { name, code } */
 export async function startOnline(h, prefix) {
   const name = 'qa-' + prefix + rid();
   await h.ev(() => __lang.set('en')); // os seletores usam os rótulos em inglês
-  await h.newGame(prefix);
+  await toCreation(h, prefix);
+  await fill(h, 'inMpName', name);
+  await h.shot(OUT + `${prefix}-creation.png`);
+  await h.ev(async () => { await __btn('START GAME'); });
+  await h.page.waitForFunction(() => __player.root.mGame.cur === 38 && __online.sync.linked() && __player.global.GAME.nOnlineRev > 0, null, { timeout: 20000 });
+  await h.sleep(1500); // transição (FADE) para o terrário: bloqueia cliques enquanto roda
   await dismissHints(h);
-  await openSettings(h);
-  await fill(h, 'inName', name);
-  await h.shot(OUT + `${prefix}-settings-before.png`);
-  await h.ev(async () => { await __btn('PLAY ONLINE'); });
-  await waitTxt(h, 'recCode');
-  await h.page.waitForFunction(() => __online.sync.linked() && __player.global.GAME.nOnlineRev > 0, null, { timeout: 20000 });
-  const code = await txt(h, 'recCode');
-  await h.shot(OUT + `${prefix}-settings-after.png`);
-  await closeSettings(h);
+  const code = await h.ev(() => __online.api.formatCode(__online.api.storedCode()));
   return { name, code };
 }
 
-/** a cria o mundo (ativa o multiplayer); b entra pelo código. Devolve o código do mundo */
+/** a e b criaram mundos próprios na criação do jogo: b encerra o dele e entra no de a pelo código. Devolve o código */
 export async function makeWorld(a, b) {
   await openScreen(a.h, 'world');
-  await tap(a.h, 'ENABLE MULTIPLAYER');
-  await waitTxt(a.h, 'worldCode');
+  await waitTxt(a.h, 'worldCode').catch(async e => {
+    await a.h.shot(OUT + 'DEBUG-world.png');
+    console.log('DEBUG', JSON.stringify(await a.h.ev(async () => ({ view: __online.kit.currentView()?.title, open: __online.kit.isOpen(), busy: __online.kit.isBusy(), world: (await __online.api.myWorld())?.world?.code, cur: __player.root.mGame.cur, pops: __player.root.children.filter(c => c.name.startsWith('mPop') || c.name.startsWith('mFirst')).map(c => c.name) }))));
+    throw e;
+  });
   const code = await txt(a.h, 'worldCode');
   await openScreen(b.h, 'world');
+  await tap(b.h, 'END MULTIPLAYER');
+  await tap(b.h, 'YES', 1200);
+  await waitBtn(b.h, 'JOIN');
   await fill(b.h, 'inWorldCode', code.toLowerCase());
   await tap(b.h, 'JOIN', 1500);
   await b.page.waitForFunction(() => __online.sync.state.friends.size > 0, null, { timeout: 15000 });

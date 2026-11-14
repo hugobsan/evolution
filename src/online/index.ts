@@ -15,12 +15,14 @@ import { worldView } from './world';
 import { friendsView, profileView } from './friends';
 import { pvpView } from './pvp';
 import { tradeView } from './trade';
+import * as creation from './creation';
 
 function screen(mc: any, kind: 'home' | 'arena' | 'shop' | 'match' | 'menu') {
   if (kind !== 'match') match.leave();
-  shop.setHere(kind === 'shop');
+  if (kind === 'home') creation.finish(); // jogo novo com o multiplayer ligado: vincula à conta
+  shop.setHere(kind === 'shop' && sync.mpGame());
   if (kind === 'menu') { kit.close(false, false); return; }
-  if (kind === 'match') return;
+  if (kind === 'match' || !sync.mpGame()) return;
   hud.installHud(mc, kind);
   if (api.session) { sync.processInbox(); sync.pushNow(); }
 }
@@ -44,7 +46,9 @@ export function installOnline() {
   wrap(434, 46, mc => screen(mc, 'shop'));
   wrap(434, 49, mc => screen(mc, 'match'));
   wrap(434, 52, mc => screen(mc, 'match'));
-  wrap(404, 5, mc => buildSettings(mc)); // conta online na tela de Configurações (no jogo e no menu inicial)
+  wrap(404, 5, mc => buildSettings(mc)); // conta online na tela de Configurações (só em jogo multiplayer)
+  wrap(434, 32, mc => creation.build(mc)); // toggle MULTIPLAYER na tela de novo jogo (instruções)
+  creation.install(boot);
   const views = { world: worldView, friends: friendsView, pvp: pvpView, trade: tradeView };
   hud.setOpener(id => kit.open(views[id]));
   shop.setProfileOpener(id => kit.open(profileView(id, null)));

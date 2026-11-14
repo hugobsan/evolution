@@ -120,8 +120,8 @@ export function profileView(id: string, back: View | null = friendsView): View {
       panel(v, 20, 92, 215, 252);
       pyramid(v, s.have, 127, 124, 0.44);
       panel(v, 245, 92, 375, 252);
-      label(v, 258, 98, 'Bug collection', { size: 14 });
-      const hover = label(v, 256, 318, '', { size: 12 });
+      // rollover: a linha do besouro ocupa o cabeçalho do painel (a 3ª fileira de slots cobriria uma linha embaixo)
+      const hover = label(v, 258, 98, 'Bug collection', { size: 14 });
       bugGrid(v, s.bugs, 290, 146, {
         pitch: 86, scale: 90, cols: 4,
         over: b => setText(hover, bugLine(b, stats(b))),

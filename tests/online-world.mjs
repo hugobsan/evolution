@@ -21,6 +21,9 @@ export default async (page, h) => {
   await a.h.shot(OUT + 'world-3-friends.png');
   await tapName(a.h, 'fn_' + await b.h.ev(() => __online.api.session.user.id).catch(() => ''), 100).catch(() => {});
   await tap(a.h, 'PROFILE');
+  await a.h.ev(async () => { // rollover num besouro do perfil: a linha aparece no cabeçalho do insetário
+    const v = __player.root.mGame.mOnline.v; const o = v.children.find(c => c.name?.startsWith('bug_')); const b = o.getBounds(); const c = __player.canvas; const r = c.getBoundingClientRect();
+    c.dispatchEvent(new PointerEvent('pointermove', { clientX: r.left + (b.xMin + b.xMax) / 2, clientY: r.top + (b.yMin + b.yMax) / 2, bubbles: true })); await __sleep(400); });
   await a.h.shot(OUT + 'world-4-profile.png');
   const prof = await h.ev(() => ({ slots: __player.root.mGame.mOnline.v.children.filter(c => c.name?.startsWith('bug_')).length, hex: __player.root.mGame.mOnline.v.children.filter(c => c.name?.startsWith('hx')).length }));
   console.log('perfil', JSON.stringify(prof));
@@ -45,7 +48,7 @@ export default async (page, h) => {
   await tap(a.h, 'END MULTIPLAYER');
   await tap(a.h, 'YES', 1200);
   await b.page.waitForFunction(() => !__online.sync.state.world, null, { timeout: 15000 });
-  await waitBtn(a.h, 'ENABLE MULTIPLAYER');
+  await waitBtn(a.h, 'CREATE WORLD');
   await a.h.shot(OUT + 'world-5-ended.png');
   console.log('ok: expulsar, voltar e encerrar');
 };

@@ -1,12 +1,16 @@
 // Tela "PvP" (arena): desafios recebidos (aceitar e escolher o time), desafiar amigos (luta/corrida + aposta) e histórico
-// recente do mundo com ASSISTIR.
-import { _global } from '../engine/as2';
+// recente do mundo com ASSISTIR. Atributos no rollover = caixa preta de info do jogo; aceitar = popup de adversário da
+// arena (o mesmo dos NPCs), com o time do desafiante no lado do adversário e a aposta do desafio.
+import { _global, _root } from '../engine/as2';
+import { Game } from '../game/classes/Game';
+import { SFM } from '../game/classes/SFM';
+import { clipActions } from '../game/timeline';
 import * as api from './api';
 import type { Bug, Match } from './api';
 import * as sync from './sync';
 import { online } from './shop';
-import { bugOf, stats, myBug } from './bugs';
-import { View, MC, label, button, panel, input, tabs, bugGrid, bugLine, show, refresh, flash, money, t, setText } from './kit';
+import { bugOf, myBug, battleOb } from './bugs';
+import { View, MC, label, button, panel, input, tabs, bugGrid, infoBox, show, refresh, flash, money, t, close } from './kit';
 import { nameOf, nm, watch } from './friends';
 import { dot } from './world';
 
@@ -75,7 +79,7 @@ export const pvpView: View = {
         if (kind === 'in') {
           label(v, 36, y, nm(m.challenger), { size: 17 }).name = 'cn_' + m.id;
           label(v, 36, y + 24, desc(m), { size: 13 });
-          button(v, 440, y + 6, 'ACCEPT', () => show(acceptView(m)), { scale: 95 });
+          button(v, 440, y + 6, 'ACCEPT', () => acceptPopup(m), { scale: 95 }).name = 'acc_' + m.id;
           button(v, 528, y + 6, 'DECLINE', async () => { await api.declineMatch(m.id); await sync.refreshPending(); refresh(); }, { scale: 95 });
         } else if (kind === 'acc') {
           label(v, 36, y, `${nm(m.challenger)} ${t('vs')} ${nm(m.opponent)}`, { size: 17 });
@@ -121,16 +125,20 @@ function composeView(id: string, kind: 'battle' | 'race'): View {
     build(v) {
       label(v, 40, 62, `${t(kind === 'battle' ? 'Fight against' : 'Race against')} ${nm(id)}`, { size: 18 });
       panel(v, 20, 92, 310, 240);
-      const hover = label(v, 24, 338, '', { size: 12 });
+      // painel de info: o lado da disputa (corrida mostra o tamanho) e a marca do melhor besouro, como na arena
+      G().pSell = { nId: -1, nBattle: kind === 'battle' ? 1 : -1, nMoney: 0, nDif: 1, aBug_have: [], aBug_age: [], aBug_color: [], aBug_random: [] };
+      G().paRace = [];
+      const box = infoBox(v);
       const mine = myBugs();
       const grid = () => bugGrid(v, mine, 62, 124, {
         sel: state.sel,
         on: b => {
           const i = state.sel.indexOf(b.uid);
           if (i >= 0) state.sel.splice(i, 1); else if (state.sel.length < max) state.sel.push(b.uid); else { flash(`Pick up to ${max} bugs.`); return; }
+          state.bet = bet.value(); // a tela é redesenhada: guarda a aposta já digitada
           show(cv);
         },
-        over: b => setText(hover, bugLine(b, stats(b))),
+        over: b => box?.setFrame?.('battle', battleOb(b)),
       });
       grid();
       panel(v, 340, 92, 280, 240);
@@ -158,40 +166,50 @@ function composeView(id: string, kind: 'battle' | 'race'): View {
   return cv;
 }
 
-// ───────────── aceitar ─────────────
-function acceptView(m: Match): View {
-  const sel: string[] = [];
-  const n = m.team_a.length;
-  const av: View = {
-    title: m.kind === 'battle' ? 'FIGHT' : 'RACE',
-    back: pvpView,
-    load: async () => { await nameOf([m.challenger]); return {}; },
-    build(v) {
-      label(v, 40, 62, `${nm(m.challenger)} · ${desc(m)}`, { size: 17 });
-      panel(v, 20, 92, 190, 240);
-      label(v, 32, 98, 'Their team', { size: 15 });
-      bugGrid(v, m.team_a, 62, 150, { cols: 2, total: n, pitch: 80 });
-      panel(v, 220, 92, 400, 240);
-      label(v, 232, 98, `Pick exactly ${n} bugs.`, { size: 15 });
-      const hover = label(v, 224, 338, '', { size: 12 });
-      bugGrid(v, myBugs(), 262, 150, {
-        sel, on: b => {
-          const i = sel.indexOf(b.uid);
-          if (i >= 0) sel.splice(i, 1); else if (sel.length < n) sel.push(b.uid); else { flash(`Pick up to ${n} bugs.`); return; }
-          show(av);
-        },
-        over: b => setText(hover, bugLine(b, stats(b))),
-      });
-      button(v, 40, 366, 'START', async () => {
-        mustLink();
-        const tm = team(sel);
-        if (tm.length !== n) throw new Error(`Pick exactly ${n} bugs.`);
-        if (m.bet > G().nMoney) throw new Error('Not enough money to bet this amount!');
-        const acc = await api.acceptMatch(m.id, tm);
-        await sync.processInbox();
-        watch(acc, true);
-      });
-    },
+// ───────────── aceitar: popup de adversário da arena ─────────────
+function acceptPopup(m: Match) {
+  mustLink();
+  if (m.bet > G().nMoney) throw new Error('Not enough money to bet this amount!');
+  const g = G(), a = m.team_a;
+  // pSell no formato dos NPCs (o popup e o painel de info leem daqui) + o desafio
+  g.pSell = { nId: -1, nBattle: m.kind === 'battle' ? 1 : -1, nMoney: m.bet, nDif: 1, pvp: m,
+    aBug_have: a.map(b => b.nId), aBug_color: a.map(b => b.nId_color), aBug_age: a.map(b => b.nAge_now), aBug_random: a.map(b => b.nRandom) };
+  close(false, false);
+  const pop = SFM.addClip('mPop', _root, { sTxt: m.bet, ob: g.pSell, sFrame: m.kind === 'battle' ? 'BATTLE' : 'RACE' });
+  setTimeout(() => {
+    const f = pop?.zName?.tTxt;
+    if (f) { f.text = String(m.bet); f.changed?.(); } // aposta = a do desafio
+    const cpu = pop?.children?.find((c: any) => c.depth === 65 - 16384); // rótulo "CPU" → nome do desafiante
+    if (cpu) { cpu.sTxt = nm(m.challenger); cpu.tTxt?.changed?.(); cpu.Replace?.(); }
+  }, 150);
+}
+
+// rollover no time do desafiante: os atributos reais (não a conta dos NPCs por idade)
+const P = Game.prototype as any;
+const rollOver = P.rtRollOver;
+P.rtRollOver = function (this: any, ico: any) {
+  const b = this.pSell?.pvp?.team_a?.[ico?.nId_2];
+  if (b && this.nScreen == 1 && ico.nSide == 1) { this.mClip?.mInfo?.setFrame('battle', battleOb(b)); return; }
+  return rollOver.call(this, ico);
+};
+
+// START do popup (luta: 84:14:60, corrida: 84:15:60): num desafio, aceita com o time escolhido e abre a disputa
+let busy = false;
+for (const key of ['84:14:60', '84:15:60']) {
+  const acts: any = clipActions[key];
+  const press = acts.press;
+  acts.press = function (this: any) {
+    const g = G(), m: Match | undefined = g?.pSell?.pvp;
+    if (!m) return press.call(this);
+    const picked = (m.kind === 'battle' ? g.paBattle : g.paRace).filter(Boolean);
+    if (picked.length !== m.team_a.length) { g.popWord(`Pick exactly ${m.team_a.length} bugs.`); return; }
+    if (busy) return;
+    busy = true;
+    const pop = this._parent;
+    api.acceptMatch(m.id, picked.map(bugOf)).then(async acc => {
+      await sync.processInbox();
+      pop?.removeMovieClip();
+      watch(acc, true);
+    }, e => g.popWord(e.message || String(e))).finally(() => { busy = false; });
   };
-  return av;
 }

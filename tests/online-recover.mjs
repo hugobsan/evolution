@@ -1,6 +1,6 @@
 // Online (UI no canvas): código de recuperação leva o jogador para outro aparelho (mesma conta, save da nuvem); depois os
 // dois aparelhos gravam e o que ficou para trás recebe o aviso de conflito e carrega a nuvem.
-import { OUT, startOnline, dismissHints, openSettings, fill, waitBtn, tap } from './online-lib.mjs';
+import { OUT, startOnline, toCreation, fill, waitBtn } from './online-lib.mjs';
 
 export default async (page, h) => {
   const a = { page, h };
@@ -9,13 +9,11 @@ export default async (page, h) => {
   await h.ev(async () => { const g = __player.global.GAME; g.setMoney(4321 - g.nMoney); await __online.sync.pushNow(true); });
   const uid1 = await h.ev(() => __online.api.session.user.id);
 
-  // aparelho 2: jogo novo (outro save local), entra com o código (nas Configurações)
+  // aparelho 2: tela de criação com o multiplayer ligado, entra com o código de recuperação
   const b = await h.newPage();
   await b.h.ev(() => __lang.set('en'));
-  await b.h.newGame('celular');
-  await dismissHints(b.h);
-  await openSettings(b.h);
-  await fill(b.h, 'inRecover', A.code.toLowerCase().replace(/-/g, ' '));
+  await toCreation(b.h, 'celular');
+  await fill(b.h, 'inMpRecover', A.code.toLowerCase().replace(/-/g, ' '));
   await b.h.ev(async () => { await __btn('RECOVER'); });
   await waitBtn(b.h, 'LOAD CLOUD SAVE', 20000);
   await b.h.sleep(500);

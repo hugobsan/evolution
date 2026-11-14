@@ -13,8 +13,11 @@ async function challenge(a, bId, kind, bet) {
   await tap(a.h, 'CHALLENGE A FRIEND');
   await a.h.shot(OUT + `match-${kind}-0-friends.png`);
   await tapName(a.h, (kind === 'race' ? 'race_' : 'fight_') + bId);
+  await fill(a.h, 'inBet', String(bet)); // aposta antes de escolher os besouros: o redesenho não pode zerá-la
   for (const u of (await slotUids(a.h)).slice(0, 2)) await pick(a.h, u);
-  await fill(a.h, 'inBet', String(bet));
+  await a.h.ev(async () => { // rollover no 1º besouro: atributos na caixa preta de info
+    const v = __player.root.mGame.mOnline.v; const o = v.children.find(c => c.name?.startsWith('slot_')); const b = o.getBounds(); const c = __player.canvas; const r = c.getBoundingClientRect();
+    c.dispatchEvent(new PointerEvent('pointermove', { clientX: r.left + (b.xMin + b.xMax) / 2, clientY: r.top + (b.yMin + b.yMax) / 2, bubbles: true })); await __sleep(400); });
   await a.h.shot(OUT + `match-${kind}-0-compose.png`);
   await tap(a.h, 'SEND CHALLENGE', 1200);
   await idle(a.page);
@@ -28,9 +31,18 @@ async function acceptAndWatch(b, kind) {
   await openScreen(b.h, 'pvp');
   await b.h.shot(OUT + `match-${kind}-1-received.png`);
   await tap(b.h, 'ACCEPT');
-  for (const u of (await slotUids(b.h)).slice(0, 2)) await pick(b.h, u);
+  // popup de adversário da arena (o mesmo dos NPCs): escolhe 2 besouros e START
+  await b.page.waitForFunction(() => __player.root.children.some(c => c.name.startsWith('mPop')), null, { timeout: 10000 });
+  await b.h.sleep(600);
+  const shown = await b.h.ev(async () => {
+    const pop = __player.root.children.find(c => c.name.startsWith('mPop'));
+    const icons = side => pop.children.filter(c => c.owner && c.owner.nSide === side);
+    for (const i of icons(0).slice(0, 2)) await __clickObj(i, 300);
+    return { theirs: icons(1).length, bet: pop.zName?.tTxt?.text };
+  });
+  console.log(kind, 'popup: time adversário', shown.theirs, 'aposta', shown.bet);
   await b.h.shot(OUT + `match-${kind}-1-team.png`);
-  await tap(b.h, 'START', 1200);
+  await b.h.ev(async () => { const pop = __player.root.children.find(c => c.name.startsWith('mPop')); await __clickObj(pop.children.find(c => c.depth === 60 - 16384), 1200); });
   const screen = kind === 'race' ? 4 : 3;
   await until(b.h, s => __player.global.GAME.nScreen === s && __online.match.current(), screen);
   await b.h.sleep(2500); // um pedaço em velocidade normal

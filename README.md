@@ -19,21 +19,22 @@ Versões: `main` = v2 multiplayer (mais recente), em https://evolution.hugobsan.
 Camada online opcional sobre o jogo da v1 (que continua jogável offline, sem baixar nada de rede). Desenho e
 decisões: [`docs/V2_DISCOVERY.md`](docs/V2_DISCOVERY.md).
 
-- **Entrar**: nas **Configurações** do jogo (botão de menu do HUD, ou SETTINGS no menu inicial) → **CONTA ONLINE**: só o
-  nome. O jogador recebe um **código de recuperação** (copiar e guardar): recupera o jogador num navegador limpo e leva
-  para outro aparelho (campo "Código de recuperação" + RECUPERAR, nas mesmas Configurações). Também ali: renomear,
-  sincronizar o save da nuvem e sair.
+- **Multiplayer na criação do jogo**: na tela de instruções (antes de INICIAR JOGO), o toggle **MULTIPLAYER** libera dois
+  painéis: **JOGADOR ONLINE** (só o nome, ou "já tem um jogador?" com o código de recuperação) e **MUNDO** (**criar mundo
+  novo** ou **entrar no mundo de um amigo** com o código dele). Jogo criado com o toggle desligado é offline: nenhuma
+  interface do multiplayer aparece nele.
+- **Conta**: Configurações do jogo → **CONFIGURAÇÕES DE CONTA** (só em jogo multiplayer): renomear, **código de
+  recuperação** (copiar e guardar: recupera o jogador num navegador limpo e leva para outro aparelho), save na nuvem e sair.
 - **Botões novos no HUD** (mesmo estilo dos botões de ícone do jogo, canto inferior direito; contadores vermelhos para
   ofertas e desafios pendentes): no terrário, **Configuração do multiplayer** (engrenagem) e **Amigos**; na arena,
   **PvP**; na loja, **Troca multiplayer**. Cada um abre uma tela modal no estilo das telas do jogo (fundo, botões, fonte,
   FADE; o jogo pausa e retoma ao voltar), toda no motor do jogo, sem HTML próprio.
-- **Mundo por código** (Configuração do multiplayer): ativar o multiplayer cria um mundo e dá um código de 6 letras para
-  compartilhar (até 10 jogadores); entrar com o código de um amigo; o dono remove membros e encerra, os membros saem; o
-  save local de cada um nunca é apagado.
+- **Mundo por código** (Configuração do multiplayer): código de 6 letras para compartilhar (até 10 jogadores); o dono
+  remove membros e encerra, os membros saem (e podem criar outro mundo ou entrar em outro); o save local nunca é apagado.
 - **Amigos**: todos do mundo, com quem está **conectado agora** (presença em tempo real); abrir o perfil (dinheiro,
-  pirâmide, insetário, histórico com ASSISTIR). **PvP**: desafios recebidos (aceitar e escolher o time), desafiar amigos
-  (luta/corrida + aposta) e histórico recente do mundo com **replay** determinístico. **Troca**: besouros à venda dos
-  amigos (a lista de venda do jogo deles) para comprar, ofertas recebidas/enviadas e propor troca. O **NPC do amigo**
+  pirâmide, insetário, histórico com ASSISTIR). **PvP**: desafios recebidos (aceitar no popup de adversário da arena, o mesmo
+  dos NPCs), desafiar amigos (luta/corrida + aposta; atributos na caixa preta de info) e histórico recente do mundo com **replay** determinístico. **Troca**: besouros à venda dos
+  amigos (a lista de venda do jogo deles) para comprar, ofertas recebidas/enviadas e propor troca (vários besouros de cada lado + $). O **NPC do amigo**
   anda na loja quando ele também está lá.
 - Save na nuvem com revisão: dois aparelhos com o mesmo jogador recebem aviso de conflito e escolhem qual save fica.
 

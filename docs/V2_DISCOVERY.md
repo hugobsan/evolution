@@ -44,21 +44,30 @@ volta com `GAME.start()`, popups Sim/Não do jogo para confirmar). Não há HTML
   **Amigos** (grade 5×2, botões a 90%, painel de info e botão SPEED recuados), a arena **PvP**, a loja **Troca multiplayer**.
   Entram em **depth negativa** com `timeline` (como o btContinue do menu): o `mGame.remove()` não os apaga e eles somem sozinhos
   na troca de frame. Contador vermelho de ofertas/desafios pendentes. O botão ONLINE do topo foi removido.
-- **Configuração do multiplayer** (aba MUNDO): código do mundo (copiar), ativar (criar mundo), entrar por código, sair/encerrar
-  (confirmação no popup do jogo), dono remove membros.
-- **Conta** (nome, código de recuperação, entrar com o código, save na nuvem, sair): seção "CONTA ONLINE" da tela de
-  **Configurações** (sprite 404, frame Setting, junto de Música/Som/Idioma), no jogo e no menu inicial.
+- **Criação do jogo** (`creation.ts`, sprite 434 frame 32, instruções): toggle MULTIPLAYER (desenhado no padrão das bolinhas
+  de presença); ligado, o texto dá lugar aos painéis JOGADOR ONLINE (nome ou código de recuperação; com jogador: SAIR e
+  carregar o save da nuvem) e MUNDO (criar mundo novo / entrar no mundo de um amigo com o código). INICIAR JOGO cria o
+  jogador e o mundo antes (erro = aviso, o jogo não começa) e o terrário vincula o jogo novo (`sOnlineUid`). Jogo com o
+  toggle desligado (`sOnlineUid` vazio) não mostra nada do multiplayer (HUD, conta, NPC na loja, avisos).
+- **Configuração do multiplayer** (aba MUNDO): código do mundo (copiar), criar ou entrar por código (depois de sair),
+  sair/encerrar (confirmação no popup do jogo), dono remove membros.
+- **Conta** (nome, código de recuperação, save na nuvem, sair): botão CONFIGURAÇÕES DE CONTA nas **Configurações** (sprite
+  404, frame Setting), só em jogo multiplayer; abre a tela da conta no mesmo clip (somem Música/Som/Idioma/Sincronizar,
+  ficam SAIR PARA O MENU e VOLTAR AO JOGO).
 - **Amigos**: todos do mundo com presença Realtime (conectado agora / na loja) e perfil (pirâmide com os hexágonos do jogo,
   insetário em slots, histórico com ASSISTIR).
-- **PvP** (arena): desafios recebidos (aceitar → escolher o time), desafiar (luta/corrida + aposta), histórico do mundo.
-- **Troca** (loja): à venda (lista de venda `aAdult_sell` dos amigos, no snapshot), ofertas e propor troca.
+- **PvP** (arena): desafios recebidos (aceitar → popup de adversário da arena `mPop` BATTLE/RACE, o mesmo dos NPCs, com o time
+  do desafiante no lado da CPU e a aposta do desafio), desafiar (luta/corrida + aposta; rollover na caixa preta de info, cópia
+  dos clips 239/348/356 do HUD), histórico do mundo.
+- **Troca** (loja): à venda (lista de venda `aAdult_sell` dos amigos, no snapshot), ofertas e propor troca (até 12 besouros
+  de cada lado + $, `give_bugs`/`want_bugs`; rollover na caixa preta de info).
 - Avisos com o balão `Word` (`GAME.popWord`); conflito de save com `mPop` (frame `Y_N`); resultado da disputa com `mPop` (`WARN`).
 - **NPC do membro na loja** = `mPeople` com o nome numa etiqueta (sprite 76); **luta/corrida e replay** = as próprias arenas.
 
 Fluxos:
-- *Entrar*: Configurações → CONTA ONLINE → nome → o jogo aberto vira o save na nuvem (1º acesso) e a seção mostra o código de
-  recuperação. Depois: Configuração do multiplayer → ativar (cria o mundo, recebe o código) ou entrar com o código de um amigo.
-- *Oferta*: Troca → TROCAR COM UM AMIGO → escolher "dou" (um besouro meu e/ou $) e "quero" (um besouro dele e/ou $) → enviar;
+- *Entrar*: novo jogo → instruções → MULTIPLAYER ligado → nome (ou código de recuperação) e criar mundo / código de um amigo →
+  INICIAR JOGO: o jogo novo vira o save na nuvem; o código de recuperação fica em Configurações → CONFIGURAÇÕES DE CONTA.
+- *Oferta*: Troca → TROCAR COM UM AMIGO → escolher "dou" (besouros meus e/ou $) e "quero" (besouros dele e/ou $) → enviar;
   ou FOR SALE → COMPRAR um besouro da lista de venda dele (pedido de compra: reserva o $; ele aceita ou recusa). O que eu dou
   sai do meu jogo na hora (reservado, como a lista de venda da v1); recusar/cancelar devolve.
 - *Desafio*: PvP → DESAFIAR UM AMIGO → 1–3 besouros (luta) ou 1–2 (corrida) + aposta → enviar (aposta reservada). O amigo escolhe o
