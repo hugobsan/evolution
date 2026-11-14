@@ -101,6 +101,7 @@ function redraw(mc: MC) {
   if (mc.removed) return;
   if (mc.mPyr) mc.removeChild(mc.mPyr); // depth negativa: removeMovieClip não remove (regra do AS2)
   const o: MC = mc.createEmptyMovieClip('mPyr', -15897);
+  o.timeline = true; o.placeKey = 'dyn'; // objeto do frame: sai junto com a pirâmide (clip de script ficaria no insetário)
   o.__d = 0;
   const C = centers(mc), have = _global.GAME?.aBug_have ?? [];
   const add = (d: ShapeDef, alpha = 100) => { const s: any = new ShapeInst(d); s._alpha = alpha; o.addChild(s, o.__d++); };
