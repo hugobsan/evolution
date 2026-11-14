@@ -18,6 +18,9 @@ import { tradeView } from './trade';
 import * as creation from './creation';
 
 function screen(mc: any, kind: 'home' | 'arena' | 'shop' | 'match' | 'menu') {
+  // botão SPEED do HUD (434:38:199): o tempo só passa no insetário; na loja/arena/disputa ele não faz nada
+  const speed = mc.children.find((c: any) => c.depth === 199 - 16384);
+  if (speed) speed._visible = kind === 'home';
   if (kind !== 'match') match.leave();
   if (kind === 'home') creation.finish(); // jogo novo com o multiplayer ligado: vincula à conta
   shop.setHere(kind === 'shop' && sync.mpGame());
