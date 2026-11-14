@@ -69,7 +69,7 @@ async function loadInfo(): Promise<Info> {
 }
 
 function options(mc: MC) {
-  mc.mMpOpts?.removeMovieClip();
+  if (mc.mMpOpts) mc.removeChild(mc.mMpOpts); // depth negativa: removeMovieClip não remove (regra do AS2)
   const text = mc.children.find((c: MC) => c.depth === 115 - 16384); // texto das instruções (o 108 é o título)
   if (text) text._visible = !on;
   fields = {};
@@ -146,6 +146,7 @@ export function build(mc: MC) {
   join = false;
   draft.name = null; draft.world = ''; draft.code = '';
   pending = null;
+  if (mc.sPlayer == undefined) return; // instruções avulsas (menu → Instruções): sem INICIAR JOGO, sem toggle
   const g = mc.createEmptyMovieClip('mMp', -15880);
   g.timeline = true; g.placeKey = 'dyn'; g.__d = 0;
   toggle(g, 245, 312, () => options(mc));

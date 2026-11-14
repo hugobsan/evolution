@@ -24,7 +24,7 @@ const GAME = () => _global.GAME;
 
 /** (re)cria a camada da conta no clip da tela Setting */
 function section(mc: MC): MC {
-  mc.mOnline?.removeMovieClip();
+  if (mc.mOnline) mc.removeChild(mc.mOnline); // depth negativa: removeMovieClip não remove (regra do AS2)
   const c = mc.createEmptyMovieClip('mOnline', DEPTH);
   c.timeline = true; c.placeKey = 'dyn'; c.__d = 0;
   return c;
@@ -41,7 +41,7 @@ function showBase(mc: MC, v: boolean) {
 /** tela base: botão ACCOUNT SETTINGS (só num jogo criado com o multiplayer; no menu inicial, nada) */
 export function buildSettings(mc: MC) {
   showBase(mc, true);
-  if (mc.bMenu || !sync.mpGame()) { mc.mOnline?.removeMovieClip(); return; }
+  if (mc.bMenu || !sync.mpGame()) { if (mc.mOnline) mc.removeChild(mc.mOnline); return; }
   const c = section(mc);
   button(c, 5, 290, 'ACCOUNT SETTINGS', () => accountScreen(mc));
 }
