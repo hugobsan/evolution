@@ -238,14 +238,21 @@ port de classes e de scripts de timeline pode ser dividido entre agentes.
   servidor) apenas *em volta* do passo da simulação (`init` + `run()`), e restaure logo depois. Assim transições e
   efeitos visuais não consomem a sequência. Simulação por passos (não por tempo) deixa acelerar/pular sem mudar o
   resultado. Risco: `Math.sin/cos/atan2` podem diferir entre motores JS; grave o resultado oficial e compare no replay.
-- **Formulários e listas em HTML sobreposto**, desenhados nas coordenadas do palco (ex.: 640×480) com
-  `transform: scale()` acompanhando o canvas; pare a propagação dos eventos de ponteiro e pause o jogo enquanto aberto.
-  Popups do canvas não podem ficar escondidos atrás do overlay (feche-o quando o jogo precisar perguntar algo).
+- **Telas novas no próprio motor, no estilo das originais**: monte-as com os sprites do jogo (fundo, painéis 9-slice, slots,
+  botões, textos, campo de entrada do próprio jogo) em vez de HTML sobreposto; fica igual às telas existentes, pausa/retoma
+  o jogo como elas e herda tradução e fontes. Listas longas = páginas com botões `<` `>` (não há rolagem no motor).
+  Ao reaproveitar um sprite, leia o `load` dele: o fundo (309) é um quadrado de 20×20 que a tela Setting estica por script.
+- **Botões novos no HUD**: depth negativa **com** `timeline` (somem na troca de frame; rotinas que varrem clips de depth ≥ 0
+  não os apagam) e abaixo do clip das telas modais (para elas cobrirem o botão). Ícones novos: shapes no pipeline do motor
+  (gradiente radial/linear, contorno fino) registrados em `data.chars` como um sprite extra com um frame por ícone (cada frame
+  remove o que os outros usam: a display list do SWF acumula entre frames), e figuras do próprio SWF (NPCs) compostas pequenas.
+- **Popups do jogo que reiniciam o jogo ao fechar** (`mPop.back` → `GAME.start()`): enquanto uma tela própria está aberta, embrulhe
+  `start` para só marcar "retomar" e chame o original ao fechar a tela.
 - Campos de texto reaproveitados de popups do SWF costumam ser de **uma linha**: `\n` não quebra; mantenha os textos
   curtos e confira na tradução.
 - **Save na nuvem**: reaproveite a serialização do SharedObject (grave e leia o próprio item do `localStorage`) para
   o formato ficar idêntico ao local. Revisão no servidor detecta dois aparelhos; o que muda o save de outra pessoa
   (trocas, prêmios) vira uma "entrega" aplicada pelo cliente e marcada no próprio save (idempotente).
 - **Testes multiusuário**: um contexto de navegador por jogador; espere o render assíncrono terminar antes de
-  preencher campos (um atributo `data-busy` no painel resolve); force o idioma para os seletores; lembre do rate
+  clicar (uma flag `isBusy()` da tela resolve; nomeie os clips que o teste usa e ache-os por nome/rótulo); force o idioma para os seletores; lembre do rate
   limit do provedor de auth ao criar muitos usuários de teste.

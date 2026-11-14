@@ -34,43 +34,34 @@ Backend: projeto Supabase **evolution** (ref `xezwvhrbculmnyksjyen`, região `sa
 
 ## 3. Telas e fluxos (encaixe na UI do jogo)
 
-**Reaproveitado do SWF (canvas):**
-- Botão **ONLINE** = sprite 57 (`attachSymbol(57, ...)`, o mesmo botão de SETTINGS/CONTINUE), no canto superior
-  direito do terrário, da loja e da arena. Mostra o contador de pendências (`ONLINE (2)`).
-- Avisos com o balão `Word` (`GAME.popWord`); conflito de save com `mPop` (frame `Y_N`); resultado da disputa com
-  `mPop` (frame `WARN`).
-- **NPC do membro na loja** = `mPeople` (o clip dos vendedores, aparência 2–5 do perfil) com o nome numa etiqueta
-  (sprite 76, o texto do jogo, com a caixa preta de borda branca dos balões).
-- **Luta/corrida online e replay** = as próprias arenas (`Pause_2`/`Pause_3`, `initial_3`/`initial_4`), com os botões
-  de acelerar/pular corrida que já existem.
-- Miniaturas de besouro no painel = o sprite `beetle` do SWF (frame da espécie + matriz de cor) desenhado num canvas
-  fora da tela com `BitmapData.draw` (nada redesenhado).
+**Tudo no motor do jogo (canvas), no estilo das telas modais da v1** (Setting/pirâmide/popups: fundo em gradiente com
+bolhas — sprites 309/311/317 —, painéis 9-slice (48), slots (59), botões (57), textos (5/76), campos de entrada do próprio
+jogo = `TextField` de entrada do motor, como o RENAME). Código em `src/online/kit.ts` (host da tela: `FADE()`, `GAME.stop()`,
+volta com `GAME.start()`, popups Sim/Não do jogo para confirmar). Não há HTML próprio.
 
-**Painel online (HTML sobreposto ao canvas, no estilo dos popups do jogo: fundo preto, borda branca, destaque
-`#00ccff`):** formulários e listas roláveis não existem no motor (os `mPop` têm frames fixos para os fluxos da v1);
-em HTML ganhamos campos de texto, foco, rolagem, copiar o código e acessibilidade sem inflar o motor. É desenhado em
-coordenadas do jogo (640×480) e escalado com o canvas. Abrir o painel pausa o jogo (`GAME.stop()`), como os `mPop`;
-fechar retoma.
-
-Abas:
-1. **Conta** — sem identidade: "Seu nome" + JOGAR ONLINE, ou "Código de recuperação" + RECUPERAR. Com identidade:
-   renomear, código de recuperação (COPIAR), estado do save na nuvem (vincular / baixar / usar este jogo), sair (pede
-   confirmação: sem o código o jogador se perde).
-2. **Mundo** — sem mundo: CRIAR MUNDO ou entrar com o código. Com mundo: código (COPIAR), membros (dinheiro, dias,
-   pirâmide, "na loja agora"), PERFIL; o dono tem REMOVER e ENCERRAR MULTIPLAYER; membros têm SAIR DO MUNDO.
-3. **Perfil do membro** — dinheiro, dias, pirâmide (15 miniaturas, as já criadas acesas), insetário (cards com
-   miniatura, nome, sexo, idade, ataque/HP/velocidade), histórico com ASSISTIR. Ações: OFERECER TROCA,
-   DESAFIAR: LUTA, DESAFIAR: CORRIDA.
-4. **Ofertas** — recebidas (aceitar/recusar), enviadas (cancelar), histórico.
-5. **Desafios** — recebidos (escolher o time → a arena abre), aguardando, em andamento (ASSISTIR termina e grava),
-   resultados (ASSISTIR = replay).
+- **Botões do HUD** (`hud.ts`): ícones novos no padrão do `mIco` (`icons.ts`: engrenagem, dois NPCs `mPeople`, espadas, setas;
+  registrados como o sprite extra `mIcoOn`) no mesmo botão de ícone (357). O terrário ganha **Configuração do multiplayer** e
+  **Amigos** (grade 5×2, botões a 90%, painel de info e botão SPEED recuados), a arena **PvP**, a loja **Troca multiplayer**.
+  Entram em **depth negativa** com `timeline` (como o btContinue do menu): o `mGame.remove()` não os apaga e eles somem sozinhos
+  na troca de frame. Contador vermelho de ofertas/desafios pendentes. O botão ONLINE do topo foi removido.
+- **Configuração do multiplayer** (aba MUNDO): código do mundo (copiar), ativar (criar mundo), entrar por código, sair/encerrar
+  (confirmação no popup do jogo), dono remove membros.
+- **Conta** (nome, código de recuperação, entrar com o código, save na nuvem, sair): seção "CONTA ONLINE" da tela de
+  **Configurações** (sprite 404, frame Setting, junto de Música/Som/Idioma), no jogo e no menu inicial.
+- **Amigos**: todos do mundo com presença Realtime (conectado agora / na loja) e perfil (pirâmide com os hexágonos do jogo,
+  insetário em slots, histórico com ASSISTIR).
+- **PvP** (arena): desafios recebidos (aceitar → escolher o time), desafiar (luta/corrida + aposta), histórico do mundo.
+- **Troca** (loja): à venda (lista de venda `aAdult_sell` dos amigos, no snapshot), ofertas e propor troca.
+- Avisos com o balão `Word` (`GAME.popWord`); conflito de save com `mPop` (frame `Y_N`); resultado da disputa com `mPop` (`WARN`).
+- **NPC do membro na loja** = `mPeople` com o nome numa etiqueta (sprite 76); **luta/corrida e replay** = as próprias arenas.
 
 Fluxos:
-- *Entrar*: no jogo, ONLINE → nome → o jogo aberto vira o save na nuvem (1º acesso) e o painel mostra o código de
-  recuperação. Depois: criar mundo (recebe o código) ou entrar com o código de um amigo.
-- *Oferta*: perfil → escolher "dou" (um besouro meu e/ou $) e "quero" (um besouro dele e/ou $) → enviar. O que eu dou
+- *Entrar*: Configurações → CONTA ONLINE → nome → o jogo aberto vira o save na nuvem (1º acesso) e a seção mostra o código de
+  recuperação. Depois: Configuração do multiplayer → ativar (cria o mundo, recebe o código) ou entrar com o código de um amigo.
+- *Oferta*: Troca → TROCAR COM UM AMIGO → escolher "dou" (um besouro meu e/ou $) e "quero" (um besouro dele e/ou $) → enviar;
+  ou FOR SALE → COMPRAR um besouro da lista de venda dele (pedido de compra: reserva o $; ele aceita ou recusa). O que eu dou
   sai do meu jogo na hora (reservado, como a lista de venda da v1); recusar/cancelar devolve.
-- *Desafio*: perfil → 1–3 besouros (luta) ou 1–2 (corrida) + aposta → enviar (aposta reservada). O amigo escolhe o
+- *Desafio*: PvP → DESAFIAR UM AMIGO → 1–3 besouros (luta) ou 1–2 (corrida) + aposta → enviar (aposta reservada). O amigo escolhe o
   mesmo número de besouros (reserva a aposta) → a arena abre e a disputa roda; o vencedor leva 2× a aposta. O
   desafiante recebe o resultado e pode rever.
 - *Loja*: com identidade e mundo, entrar na loja publica presença no canal do mundo; membros presentes viram NPCs.
@@ -113,7 +104,7 @@ Todas as tabelas com RLS. Escrita sensível só por funções `security definer`
 | `worlds` | `code` (6 caracteres sem ambíguos), `owner` | membros | `create_world`, `end_world` |
 | `world_members` | `user_id` (PK: um mundo por jogador), `world_id` | membros do mesmo mundo | `join_world`, `leave_world`, `kick_member` |
 | `saves` | save completo (`data` jsonb), `rev` | só o dono | `push_save` |
-| `snapshots` | resumo público: `money`, `level`, `days`, `score`, `have` (pirâmide), `bugs` (até 12), `selling` | dono e membros do mundo | `push_save` |
+| `snapshots` | resumo público: `money`, `level`, `days`, `score`, `have` (pirâmide), `bugs` (até 12), `selling`, `sell` (a lista de venda: besouros com `price`, até 12) | dono e membros do mundo | `push_save` |
 | `offers` | `from_user`, `to_user`, `give_bug`, `give_money`, `want_bug`, `want_money`, `status` | as duas partes | `create_offer`, `respond_offer`, `cancel_offer` |
 | `matches` | `kind`, `challenger`, `opponent`, `bet`, `seed`, `team_a`, `team_b`, `status`, `winner`, `result` | participantes e membros do mundo deles | `create_match`, `accept_match`, `decline_match`, `finish_match` |
 | `inbox` | entregas: `money`, `add_bugs`, `remove_uids`, `kind` (aviso) | só o dono | as RPCs acima inserem; `ack_inbox` marca |
@@ -128,6 +119,8 @@ Todas as tabelas com RLS. Escrita sensível só por funções `security definer`
   `POST /rest/v1/rpc/ping` para o projeto Free não pausar.
 - Realtime: `postgres_changes` em `offers`, `matches`, `inbox` e `world_members` (respeita a RLS) + presença no canal
   `shop:<id do mundo>`.
+- Migration `20261114080000_snapshot_sell.sql` (retrocompatível): coluna `snapshots.sell` + validação em `push_save`
+  (clientes antigos não enviam `sell`: fica `[]`). O besouro da lista de venda guarda `sUid` e os atributos (`Adult_sell`).
 
 ## 6. Sincronização do save local ↔ servidor
 
@@ -173,9 +166,9 @@ Todas as tabelas com RLS. Escrita sensível só por funções `security definer`
 
 ## 9. Presença na loja
 
-- Com identidade e mundo, ao entrar na loja (`nScreen == 2`) o cliente publica presença no canal Realtime
-  `shop:<id do mundo>` com `{name, look}`; ao sair da loja, retira. O canal é observado o tempo todo (o painel mostra
-  "na loja agora").
+- Com identidade e mundo, o cliente publica presença no canal Realtime `shop:<id do mundo>` o tempo todo com
+  `{name, look, shop}` (`shop` = está na loja, `nScreen == 2`): quem tem presença está **conectado agora** (tela Amigos) e
+  `shop: true` vira NPC na loja dos outros.
 - Cada membro presente vira um NPC: um `Sellman` (rota aleatória dos vendedores particulares) que não vende nem compra,
   com o nome em cima; clique abre o perfil (trocar/desafiar dali). Quando a rota acaba, ele recomeça enquanto o membro
   estiver na loja.
@@ -185,8 +178,11 @@ Todas as tabelas com RLS. Escrita sensível só por funções `security definer`
 ## 10. Testes
 
 - `tests/harness.mjs` ganhou `h.newPage()` (segundo contexto de navegador = segundo jogador).
-- `tests/online-*.mjs`: mundo (entrar, criar, entrar pelo código, perfil, expulsar, encerrar), trocas, desafios
-  (resultado do replay = resultado gravado), presença na loja, recuperação em outro aparelho.
+- `tests/online-*.mjs`: mundo (entrar pelas Configurações, criar, entrar pelo código, amigos com presença, perfil, remover,
+  encerrar), trocas (venda, compra da lista de venda, recusa, cancelamento), desafios (resultado do replay = resultado
+  gravado), presença na loja (NPC abre o perfil), recuperação em outro aparelho. A UI é do canvas: `tests/online-lib.mjs`
+  clica nos botões pelo rótulo (`__find`) e preenche campos pelo nome (`__fill`, só em dev, `src/devtools.ts`).
+- `tests/shots-online.mjs` gera as capturas EN/PT de todas as telas para comparar com as telas originais.
 - Jogadores de teste usam nomes `qa-*`; limpeza manual por SQL (README).
 
 ## 11. Publicação (não publicar sem aprovação)

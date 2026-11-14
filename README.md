@@ -19,20 +19,29 @@ Versões: `main` = v2 multiplayer (mais recente), em https://evolution.hugobsan.
 Camada online opcional sobre o jogo da v1 (que continua jogável offline, sem baixar nada de rede). Desenho e
 decisões: [`docs/V2_DISCOVERY.md`](docs/V2_DISCOVERY.md).
 
-- **Entrar**: no jogo, botão **ONLINE** (canto superior direito) → só o nome. O jogador recebe um **código de
-  recuperação** (copiar e guardar): recupera o jogador num navegador limpo e leva para outro aparelho.
-- **Mundo por código**: quem cria recebe um código de 6 letras para compartilhar (até 10 jogadores). O dono expulsa e
-  encerra; o save local de cada um nunca é apagado.
-- Entre membros do mundo: perfil (dinheiro, pirâmide, insetário, histórico), **trocas/compras de besouros**, **desafios
-  assíncronos** de luta e corrida com aposta e **replay** determinístico, e o **NPC do amigo** andando na loja quando
-  ele também está lá.
+- **Entrar**: nas **Configurações** do jogo (botão de menu do HUD, ou SETTINGS no menu inicial) → **CONTA ONLINE**: só o
+  nome. O jogador recebe um **código de recuperação** (copiar e guardar): recupera o jogador num navegador limpo e leva
+  para outro aparelho (campo "Código de recuperação" + RECUPERAR, nas mesmas Configurações). Também ali: renomear,
+  sincronizar o save da nuvem e sair.
+- **Botões novos no HUD** (mesmo estilo dos botões de ícone do jogo, canto inferior direito; contadores vermelhos para
+  ofertas e desafios pendentes): no terrário, **Configuração do multiplayer** (engrenagem) e **Amigos**; na arena,
+  **PvP**; na loja, **Troca multiplayer**. Cada um abre uma tela modal no estilo das telas do jogo (fundo, botões, fonte,
+  FADE; o jogo pausa e retoma ao voltar), toda no motor do jogo, sem HTML próprio.
+- **Mundo por código** (Configuração do multiplayer): ativar o multiplayer cria um mundo e dá um código de 6 letras para
+  compartilhar (até 10 jogadores); entrar com o código de um amigo; o dono remove membros e encerra, os membros saem; o
+  save local de cada um nunca é apagado.
+- **Amigos**: todos do mundo, com quem está **conectado agora** (presença em tempo real); abrir o perfil (dinheiro,
+  pirâmide, insetário, histórico com ASSISTIR). **PvP**: desafios recebidos (aceitar e escolher o time), desafiar amigos
+  (luta/corrida + aposta) e histórico recente do mundo com **replay** determinístico. **Troca**: besouros à venda dos
+  amigos (a lista de venda do jogo deles) para comprar, ofertas recebidas/enviadas e propor troca. O **NPC do amigo**
+  anda na loja quando ele também está lá.
 - Save na nuvem com revisão: dois aparelhos com o mesmo jogador recebem aviso de conflito e escolhem qual save fica.
 
 Técnico: front estático + Supabase (Auth anônimo, Postgres com RLS em todas as tabelas, RPCs `security definer`,
 Realtime). Código em `src/online/` (config pública em `src/online/config.ts`), migrations em `supabase/migrations/`.
 
 - Testes com 2 navegadores: `GAME_URL=http://localhost:5300/ node tests/harness.mjs tests/online-world.mjs`
-  (também `online-trade`, `online-match`, `online-shop`, `online-recover`). Cada execução cria jogadores `qa-*`; o login
+  (também `online-trade`, `online-match`, `online-shop`, `online-recover`; a UI é do canvas: os testes clicam nos botões do jogo pelo rótulo, `tests/online-lib.mjs`). Cada execução cria jogadores `qa-*`; o login
   anônimo tem rate limit por IP (60/h).
 - Limpar jogadores de teste: `npx supabase db query --remote --yes "delete from auth.users where id in (select id from
   public.profiles where username like 'qa-%')"`.
