@@ -456,8 +456,9 @@ export class TextField extends DisplayObject {
     assignPath(this.$scope(), this.varPath, this.text);
     this.lastVar = this.text;
   }
-  setInputValue(v: string) {
-    if (this.input && this.input.value !== v) this.input.value = v; // mantém o <input> sobreposto igual ao texto
+  /** `fromInput`: veio do próprio <input> (que já foi ajustado no handler; durante a composição do teclado não se mexe nele) */
+  setInputValue(v: string, fromInput = false) {
+    if (this.input && !fromInput) setInputKeepCaret(this.input, v); // mantém o <input> sobreposto igual ao texto
     this.src = v; this.srcHtml = false; this.changed(); this.pushVar();
     if (typeof this.onChanged === 'function') this.onChanged.call(this, this);
   }
@@ -861,6 +862,7 @@ export class Player {
       this.drain();
     }
     this.updateDrag();
+    this.checkZoom();
   }
 
   // --- render
@@ -1190,17 +1192,29 @@ export class Player {
   }
 
   // --- input
+  private stageXY(e: PointerEvent): [number, number] {
+    const r = this.canvas.getBoundingClientRect();
+    return [(e.clientX - r.left) * this.data.width / r.width, (e.clientY - r.top) * this.data.height / r.height];
+  }
   private bindInput() {
-    const pos = (e: PointerEvent) => {
-      const r = this.canvas.getBoundingClientRect();
-      this.mouseX = (e.clientX - r.left) * this.data.width / r.width;
-      this.mouseY = (e.clientY - r.top) * this.data.height / r.height;
-    };
-    addEventListener('pointermove', e => { pos(e); this.ctrlDown = e.ctrlKey; this.run(() => { this.updateDrag(); this.updateHover(); }); });
+    const pos = (e: PointerEvent) => { [this.mouseX, this.mouseY] = this.stageXY(e); };
+    // a página não amplia (pinça/duplo toque no iOS): o zoom é só o do insetário, feito pelo motor
+    document.addEventListener('gesturestart' as any, (e: Event) => e.preventDefault());
+    addEventListener('pointermove', e => {
+      if (this.touches.has(e.pointerId)) {
+        this.touches.set(e.pointerId, this.stageXY(e));
+        if (this.pinch) { this.movePinch(); return; }
+      }
+      pos(e); this.ctrlDown = e.ctrlKey; this.run(() => { this.updateDrag(); this.updateHover(); });
+    });
     addEventListener('keydown', e => { if (e.key === 'Control') this.ctrlDown = true; });
     addEventListener('keyup', e => { if (e.key === 'Control') { this.ctrlDown = false; this.run(() => this.updateDrag()); } });
     addEventListener('blur', () => { this.ctrlDown = false; });
     this.canvas.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'touch') {
+        this.touches.set(e.pointerId, this.stageXY(e));
+        if (this.pinch || (this.touches.size === 2 && this.startPinch())) { e.preventDefault(); return; }
+      }
       pos(e);
       this.audio.resume();
       if (document.activeElement instanceof HTMLInputElement) document.activeElement.blur();
@@ -1211,19 +1225,72 @@ export class Player {
       });
       e.preventDefault();
     });
-    addEventListener('pointerup', e => {
+    const up = (e: PointerEvent) => {
+      if (this.touches.delete(e.pointerId) && this.pinch) {
+        if (this.touches.size < 2) this.pinch = null;
+        return; // dedos da pinça não soltam nada no jogo
+      }
       pos(e);
-      this.run(() => {
-        const p = this.pressed;
-        this.pressed = null;
-        if (p) {
-          const over = this.pickTop() === p;
-          this.setButtonState(p, over ? 'o' : 'u');
-          this.fire(p, over ? 'release' : 'releaseOutside');
-        }
-        this.updateHover(true);
-      });
-    });
+      this.run(() => this.release());
+    };
+    addEventListener('pointerup', up);
+    addEventListener('pointercancel', up);
+  }
+  private release() {
+    const p = this.pressed;
+    this.pressed = null;
+    if (p) {
+      const over = this.pickTop() === p;
+      this.setButtonState(p, over ? 'o' : 'u');
+      this.fire(p, over ? 'release' : 'releaseOutside');
+    }
+    this.updateHover(true);
+  }
+
+  // --- zoom com pinça (extensão, não existe no Flash): amplia só o clip que `zoomTarget` devolver
+  /** clip que pode ser ampliado agora (ou null: sem zoom, e o que houver volta ao normal) */
+  zoomTarget: (() => DisplayObject | null) | null = null;
+  /** área visível do clip ampliado, em coordenadas do pai: a vista nunca sai dela */
+  zoomRect: Rect = [0, 0, 0, 0];
+  zoomMax = 3;
+  private touches = new Map<number, [number, number]>();
+  private pinch: { d0: number; s0: number; px: number; py: number } | null = null;
+  zoom: { o: DisplayObject; base: Mat; s: number; tx: number; ty: number } | null = null;
+  private pinchInfo(o: DisplayObject) {
+    const [a, b] = [...this.touches.values()];
+    const mid = o.parent ? o.parent.globalToLocalXY((a[0] + b[0]) / 2, (a[1] + b[1]) / 2) : [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    return { d: Math.hypot(a[0] - b[0], a[1] - b[1]) || 1, mx: mid[0], my: mid[1] };
+  }
+  private startPinch(): boolean {
+    const o = this.zoomTarget?.();
+    if (!o) return false;
+    // o 1º dedo já pode ter pegado um besouro: solta onde está, antes de virar pinça
+    this.run(() => this.release());
+    if (this.zoom?.o !== o) this.zoom = { o, base: o.m.slice() as Mat, s: 1, tx: 0, ty: 0 };
+    const z = this.zoom, { d, mx, my } = this.pinchInfo(o);
+    // ponto do conteúdo (sem zoom) sob o meio dos dedos: continua sob eles enquanto ampliam/arrastam
+    this.pinch = { d0: d, s0: z.s, px: (mx - z.tx) / z.s, py: (my - z.ty) / z.s };
+    return true;
+  }
+  private movePinch() {
+    const z = this.zoom, p = this.pinch!;
+    if (!z || z.o.removed || this.touches.size < 2) return;
+    const { d, mx, my } = this.pinchInfo(z.o);
+    const s = Math.min(this.zoomMax, Math.max(1, p.s0 * d / p.d0));
+    const [x0, y0, x1, y1] = this.zoomRect;
+    const clamp = (t: number, a0: number, a1: number) => Math.min(a0 - s * a0, Math.max(a1 - s * a1, t));
+    z.s = s;
+    z.tx = clamp(mx - s * p.px, x0, x1);
+    z.ty = clamp(my - s * p.py, y0, y1);
+    z.o.setMatrix(mul([s, 0, 0, s, z.tx, z.ty], z.base));
+  }
+  /** fora da tela ampliável (outra tela, outro frame) o zoom volta ao normal */
+  private checkZoom() {
+    const z = this.zoom;
+    if (!z || (!z.o.removed && this.zoomTarget?.() === z.o)) return;
+    if (!z.o.removed) z.o.setMatrix(z.base);
+    this.zoom = null;
+    this.pinch = null;
   }
   private pickTop() { return this.pick(this.root, this.mouseX, this.mouseY, IDENT); }
   private setButtonState(o: DisplayObject, s: string) { if (o instanceof ButtonInst) o.state = s; }
@@ -1302,19 +1369,26 @@ export class Player {
     const el = document.createElement('input');
     el.type = t.password ? 'password' : 'text';
     el.value = t.text;
+    // nomes, códigos e valores: sem maiúscula automática, correção ou sugestão do teclado do celular
     el.spellcheck = false;
     el.autocomplete = 'off';
+    el.setAttribute('autocapitalize', 'off');
+    el.setAttribute('autocorrect', 'off');
+    if (t.restrict === '0-9') el.inputMode = 'numeric';
     Object.assign(el.style, {
       position: 'absolute', border: 'none', outline: 'none', background: 'transparent', padding: '0 2px', margin: '0',
       boxSizing: 'border-box', zIndex: '10',
     } as CSSStyleDeclaration);
-    el.addEventListener('input', () => {
+    const onInput = (e: Event) => {
       let v = el.value;
       if (t.restrict) { const re = new RegExp('[' + t.restrict + ']'); v = [...v].filter(ch => re.test(ch)).join(''); }
       if (t.maxChars) v = v.slice(0, t.maxChars);
-      if (v !== el.value) el.value = v;
-      this.run(() => t.setInputValue(v));
-    });
+      // durante a composição do teclado (IME) não mexe no <input>: filtra no compositionend
+      if (!(e as InputEvent).isComposing) setInputKeepCaret(el, v);
+      this.run(() => t.setInputValue(v, true));
+    };
+    el.addEventListener('input', onInput);
+    el.addEventListener('compositionend', onInput);
     el.addEventListener('pointerdown', e => e.stopPropagation());
     this.overlay.appendChild(el);
     t.input = el;
@@ -1340,14 +1414,27 @@ export class Player {
       el.style.color = css(t.color);
       el.style.fontFamily = t.font ? t.font.cssFamily : t.deviceFamily;
       el.style.textAlign = ['left', 'right', 'center', 'justify'][t.align] || 'left';
-      if (t.maxChars) el.maxLength = t.maxChars;
-      if (document.activeElement !== el && el.value !== t.text) el.value = t.text;
+      // atributo só quando muda: reescrever a cada frame mexe no campo focado enquanto o teclado digita
+      if (t.maxChars && el.maxLength !== t.maxChars) el.maxLength = t.maxChars;
+      if (document.activeElement !== el) setInputKeepCaret(el, t.text);
     }
   }
 }
 
 /** AS2 converte Number→String com 15 dígitos significativos (126.3), JS com 17 (126.30000000000001).
  *  Na exibição, normaliza decimais longos para o formato do Flash. */
+/** troca o valor do <input> só se mudou, sem jogar o cursor para o início/fim (no celular o teclado
+ *  perde a posição e as letras seguintes entram fora de ordem: "hugo" virava "ugoH") */
+function setInputKeepCaret(el: HTMLInputElement, v: string) {
+  const old = el.value;
+  if (old === v) return;
+  const focused = document.activeElement === el;
+  const s = el.selectionStart ?? old.length, e = el.selectionEnd ?? old.length;
+  const d = old.length - v.length; // caracteres removidos (restrict/maxChars): o cursor recua junto
+  el.value = v;
+  if (focused) el.setSelectionRange(Math.max(0, s - d), Math.max(0, e - d));
+}
+
 function as2Digits(s: string): string {
   return s && /\d\.\d{12,}/.test(s) ? s.replace(/\d+\.\d{12,}/g, m => String(parseFloat(Number(m).toPrecision(15)))) : s;
 }
