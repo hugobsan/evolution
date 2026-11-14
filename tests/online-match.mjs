@@ -7,14 +7,14 @@ const until = (h, f, arg, ms = 20000) => h.page.waitForFunction(f, arg, { timeou
 const skip = h => h.ev(() => { const G = __player.global.GAME; for (let i = 0; i < 300000 && (G.nScreen == 3 || G.nScreen == 4) && (G.nScreen == 3 ? G.paBattle.length && G.paBattle_2.length : G.paRace.length && G.paRace_2.length); i++) G.run(); }, null, 60000);
 const okPopup = h => h.ev(async () => { await __sleep(400); await __btn('OK'); await __sleep(1500); });
 
-async function challenge(a, bId, kind, bet) {
+async function challenge(a, bId, kind, bet, n) {
   await go(a.h, 'arena');
   await openScreen(a.h, 'pvp');
   await tap(a.h, 'CHALLENGE A FRIEND');
   await a.h.shot(OUT + `match-${kind}-0-friends.png`);
   await tapName(a.h, (kind === 'race' ? 'race_' : 'fight_') + bId);
   await fill(a.h, 'inBet', String(bet)); // aposta antes de escolher os besouros: o redesenho não pode zerá-la
-  for (const u of (await slotUids(a.h)).slice(0, 2)) await pick(a.h, u);
+  for (const u of (await slotUids(a.h)).slice(0, n)) await pick(a.h, u);
   await a.h.ev(async () => { // rollover no 1º besouro: atributos na caixa preta de info
     const v = __player.root.mGame.mOnline.v; const o = v.children.find(c => c.name?.startsWith('slot_')); const b = o.getBounds(); const c = __player.canvas; const r = c.getBoundingClientRect();
     c.dispatchEvent(new PointerEvent('pointermove', { clientX: r.left + (b.xMin + b.xMax) / 2, clientY: r.top + (b.yMin + b.yMax) / 2, bubbles: true })); await __sleep(400); });
@@ -25,7 +25,7 @@ async function challenge(a, bId, kind, bet) {
   await a.h.sleep(900);
 }
 
-async function acceptAndWatch(b, kind) {
+async function acceptAndWatch(b, kind, n) {
   await b.page.waitForFunction(() => __online.sync.state.challenges > 0, null, { timeout: 15000 });
   await go(b.h, 'arena');
   await openScreen(b.h, 'pvp');
@@ -34,13 +34,14 @@ async function acceptAndWatch(b, kind) {
   // popup de adversário da arena (o mesmo dos NPCs): escolhe 2 besouros e START
   await b.page.waitForFunction(() => __player.root.children.some(c => c.name.startsWith('mPop')), null, { timeout: 10000 });
   await b.h.sleep(600);
-  const shown = await b.h.ev(async () => {
+  const shown = await b.h.ev(async n => {
     const pop = __player.root.children.find(c => c.name.startsWith('mPop'));
     const icons = side => pop.children.filter(c => c.owner && c.owner.nSide === side);
-    for (const i of icons(0).slice(0, 2)) await __clickObj(i, 300);
+    for (const i of icons(0).slice(0, n)) await __clickObj(i, 300);
     return { theirs: icons(1).length, bet: pop.zName?.tTxt?.text };
-  });
+  }, n);
   console.log(kind, 'popup: time adversário', shown.theirs, 'aposta', shown.bet);
+  if (shown.theirs !== n) throw new Error(`${kind}: popup mostra ${shown.theirs} besouros do adversário, esperado ${n}`);
   await b.h.shot(OUT + `match-${kind}-1-team.png`);
   await b.h.ev(async () => { const pop = __player.root.children.find(c => c.name.startsWith('mPop')); await __clickObj(pop.children.find(c => c.depth === 60 - 16384), 1200); });
   const screen = kind === 'race' ? 4 : 3;
@@ -77,11 +78,11 @@ export default async (page, h) => {
   await Promise.all([startOnline(a.h, 'ana'), startOnline(b.h, 'bob')]);
   await makeWorld(a, b);
   const bId = await myId(b.h);
-  for (const [kind, bet] of [['race', 100], ['battle', 50]]) {
+  for (const [kind, bet, n] of [['race', 100, 1], ['battle', 50, 2]]) { // corrida com 1 besouro: o popup dos NPCs sempre tem 2
     const ma0 = await a.h.ev(() => __player.global.GAME.nMoney), mb0 = await b.h.ev(() => __player.global.GAME.nMoney);
-    await challenge(a, bId, kind, bet);
+    await challenge(a, bId, kind, bet, n);
     await until(a.h, m => __player.global.GAME.nMoney === m, ma0 - bet); // aposta reservada
-    const live = await acceptAndWatch(b, kind);
+    const live = await acceptAndWatch(b, kind, n);
     const winA = live.winner === 'a';
     await until(a.h, m => __player.global.GAME.nMoney === m, ma0 - bet + (winA ? 2 * bet : 0));
     await until(b.h, m => __player.global.GAME.nMoney === m, mb0 - bet + (winA ? 0 : 2 * bet));

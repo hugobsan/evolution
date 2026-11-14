@@ -575,7 +575,8 @@ export const frameScripts: FrameScripts = {
       }
       let i = 0;
       while (i < 2) {
-        addIco(mc, mc["mS_" + i], mc.ob?.aBug_have?.[i], 1, Number(i), mc.ob?.aBug_color?.[i]);
+        // v2: desafio de corrida com 1 besouro (os NPCs sempre têm 2); sem id o ícone percorre todos os frames
+        if (mc.ob?.aBug_have?.[i] != null) addIco(mc, mc["mS_" + i], mc.ob.aBug_have[i], 1, Number(i), mc.ob.aBug_color?.[i]);
         i++;
       }
       typingLater(mc, 5, "0-9");
