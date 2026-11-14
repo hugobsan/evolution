@@ -9,7 +9,8 @@ export type Bug = {
   uid: string; nId: number; nId_color: number; nGrow: number; nRandom: number; nHealth: number;
   nAge_now: number; nSex: number; sNickName: string; nFed: number; nHeart: number;
 };
-export type Snapshot = { user_id: string; money: number; level: number; days: number; score: number; have: number[]; bugs: Bug[]; selling: number; updated_at: string };
+export type SellBug = Bug & { price: number };
+export type Snapshot = { user_id: string; money: number; level: number; days: number; score: number; have: number[]; bugs: Bug[]; selling: number; sell: SellBug[]; updated_at: string };
 export type World = { id: string; code: string; owner: string };
 export type Offer = {
   id: number; from_user: string; to_user: string; give_bug: Bug | null; give_money: number; want_bug: Bug | null; want_money: number;
@@ -153,7 +154,7 @@ export async function snapshot(uid: string): Promise<Snapshot | null> {
 }
 export async function snapshots(uids: string[]): Promise<Snapshot[]> {
   if (!uids.length) return [];
-  return chk(await (await client()).from('snapshots').select('user_id, money, level, days, have').in('user_id', uids)) as Snapshot[];
+  return chk(await (await client()).from('snapshots').select('user_id, money, level, days, have, bugs, sell').in('user_id', uids)) as Snapshot[];
 }
 export async function offers(): Promise<Offer[]> {
   return chk(await (await client()).from('offers').select('*').order('id', { ascending: false }).limit(40)) as Offer[];
@@ -162,6 +163,10 @@ export async function offers(): Promise<Offer[]> {
 export async function matches(uid: string): Promise<Match[]> {
   return chk(await (await client()).from('matches').select('*').or(`challenger.eq.${uid},opponent.eq.${uid}`)
     .order('id', { ascending: false }).limit(30)) as Match[];
+}
+/** desafios recentes do mundo (RLS: os meus e os dos membros do meu mundo) */
+export async function recentMatches(): Promise<Match[]> {
+  return chk(await (await client()).from('matches').select('*').order('id', { ascending: false }).limit(30)) as Match[];
 }
 export async function inbox(): Promise<InboxRow[]> {
   return chk(await (await client()).from('inbox').select('id, kind, ref, money, add_bugs, remove_uids').is('applied_at', null).order('id')) as InboxRow[];

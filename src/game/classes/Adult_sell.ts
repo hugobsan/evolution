@@ -17,6 +17,8 @@ export class Adult_sell {
         this[_loc3_] = ob[_loc3_];
       }
     }
+    // v2 (multiplayer): o besouro à venda guarda a identidade e os atributos, para os amigos verem e comprarem exatamente este
+    for (const k of ['sUid', 'nRandom', 'nHealth', 'nFed', 'nHeart']) if (ob?.[k] != undefined) this[k] = ob[k];
   }
   selled() {
     _global.GAME.setMoney(this.nValue_c);

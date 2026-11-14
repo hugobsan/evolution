@@ -7,8 +7,9 @@ import * as api from './api';
 import { state, emit, uid, onState } from './sync';
 
 export const inShop = new Set<string>(); // amigos (ou qualquer um) presentes na loja agora
+export const online = new Set<string>(); // membros do mundo conectados agora (presença Realtime, em qualquer tela)
 let channel: any = null;
-let tracking = false;
+let subscribed = false; // canal pronto para publicar presença
 let here = false; // eu estou na loja
 let openProfile: (id: string) => void = () => {};
 export const setProfileOpener = (f: (id: string) => void) => { openProfile = f; };
@@ -74,23 +75,33 @@ export async function connect() {
   channel = c.channel('shop:' + joined, { config: { presence: { key: me } } });
   channel.on('presence', { event: 'sync' }, () => {
     inShop.clear();
-    for (const id of Object.keys(channel.presenceState())) if (id !== me) inShop.add(id);
+    online.clear();
+    for (const [id, metas] of Object.entries<any[]>(channel.presenceState())) {
+      if (id === me) continue;
+      online.add(id);
+      if (metas.some(m => m.shop)) inShop.add(id);
+    }
     syncNpcs();
     emit();
   });
-  channel.subscribe((s: string) => { if (s === 'SUBSCRIBED') track(); });
+  channel.subscribe((s: string) => { if (s === 'SUBSCRIBED') { subscribed = true; tracked = null; track(); } });
 }
 export function disconnect() {
   if (channel) api.sbNow()?.removeChannel(channel);
   channel = null;
-  tracking = false;
+  subscribed = false;
+  tracked = null;
   inShop.clear();
+  online.clear();
 }
 
+/** presença: sempre publicada com o mundo conectado (quem está online); `shop` diz se está na loja (vira NPC) */
+let tracked: boolean | null = null;
 function track() {
-  if (!channel || !api.me) return;
-  if (here && !tracking) { tracking = true; channel.track({ name: api.me.username, look: api.me.look }); }
-  else if (!here && tracking) { tracking = false; channel.untrack(); }
+  if (!channel || !api.me || !subscribed) return;
+  if (tracked === here) return;
+  tracked = here;
+  channel.track({ name: api.me.username, look: api.me.look, shop: here });
 }
 export function setHere(v: boolean) {
   here = v;

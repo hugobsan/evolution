@@ -31,6 +31,13 @@ export function stats(b: Bug) {
   };
 }
 
+/** besouro da lista de venda (aAdult_sell) → resumo com preço; o v1 só guarda alguns atributos: o resto fica no padrão */
+export function sellBugOf(a: any): Bug & { price: number } {
+  uidOf(a); // a identidade fica no próprio item da lista (vai no save)
+  const b = bugOf({ nRandom: 0.5, nHealth: 50, nFed: 80, nHeart: 80, ...a });
+  return { ...b, price: clamp(Math.floor(Number(a.nValue_c) || 0), 0, 6666666) };
+}
+
 /** resumo público (amigos veem no perfil) */
 export function snapshotOf() {
   const g = G();
@@ -39,10 +46,12 @@ export function snapshotOf() {
     money: Math.floor(g.nMoney), level: g.nLevel | 0, days: Math.floor(g.nTime / 10), score: g.nScore | 0,
     have: (g.aBug_have as any[]).map((v, i) => (v ? i : -1)).filter(i => i >= 0),
     bugs: (g.aAdult as any[]).slice(0, 12).map(bugOf), selling: g.aAdult_sell?.length | 0,
+    sell: ((g.aAdult_sell ?? []) as any[]).slice(0, 12).map(sellBugOf),
   };
 }
 
-export const myBug = (uid: string) => (G()?.aAdult as any[] | undefined)?.find(a => a.sUid === uid);
+/** meu besouro pelo uid: no terrário ou na lista de venda (a compra por um amigo pede um besouro à venda) */
+export const myBug = (uid: string) => (G()?.aAdult as any[] | undefined)?.find(a => a.sUid === uid) ?? (G()?.aAdult_sell as any[] | undefined)?.find(a => a.sUid === uid);
 
 function removeBug(uid: string) {
   const g = G();

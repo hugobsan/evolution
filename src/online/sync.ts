@@ -10,7 +10,7 @@ export const uid = () => api.session?.user.id;
 export const linked = () => !!uid() && G()?.sOnlineUid === uid();
 
 // ── estado observado pela UI (contador do botão ONLINE, painel) ──
-export const state = { pending: 0, conflict: false, friends: new Map<string, api.Profile>(), world: null as api.World | null };
+export const state = { pending: 0, offers: 0, challenges: 0, conflict: false, friends: new Map<string, api.Profile>(), world: null as api.World | null };
 const subs = new Set<() => void>();
 export const onState = (f: () => void) => { subs.add(f); return () => subs.delete(f); };
 export const emit = () => subs.forEach(f => f());
@@ -103,14 +103,15 @@ export async function processInbox() {
 // ── pendências e tempo real ──
 export async function refreshPending() {
   const me = uid();
-  if (!me) { state.pending = 0; state.friends.clear(); state.world = null; emit(); return; }
+  if (!me) { state.pending = state.offers = state.challenges = 0; state.friends.clear(); state.world = null; emit(); return; }
   try {
     const [w, os, ms] = await Promise.all([api.myWorld(), api.offers(), api.matches(me)]);
     state.world = w?.world ?? null;
     // "amigos" = os outros membros do meu mundo
     state.friends = new Map((w?.members ?? []).filter(p => p.id !== me).map(p => [p.id, p]));
-    state.pending = os.filter(o => o.status === 'pending' && o.to_user === me).length
-      + ms.filter(m => m.status === 'pending' && m.opponent === me).length;
+    state.offers = os.filter(o => o.status === 'pending' && o.to_user === me).length;
+    state.challenges = ms.filter(m => m.status === 'pending' && m.opponent === me).length;
+    state.pending = state.offers + state.challenges;
   } catch { /* offline */ }
   emit();
 }
