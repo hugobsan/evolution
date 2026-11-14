@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.tools/
+extracted/
+.rea/
+.claude/
+.playwright-mcp/
+.mcp.json
+tests/out-*
+*.log
+.env*
+!.env.example
