@@ -1,5 +1,5 @@
-// Online (UI no canvas): trocas entre membros do mundo. Venda aceita, compra da lista de venda de um amigo (recusada e
-// aceita) e oferta cancelada: besouros e dinheiro mudam (ou voltam) dos dois lados, via inbox.
+// Online (UI no canvas): trocas entre membros do mundo. Venda aceita, compra direta da lista de venda de um amigo e
+// oferta cancelada: besouros e dinheiro mudam (ou voltam) dos dois lados, via inbox.
 import { OUT, openScreen, tap, tapName, fill, startOnline, makeWorld, go, myId, pick, idle } from './online-lib.mjs';
 
 const game = h => h.ev(() => { const g = __player.global.GAME; return { money: g.nMoney, bugs: g.aAdult.map(a => a.sUid ?? a.sNickName), sell: g.aAdult_sell.length }; });
@@ -39,8 +39,8 @@ export default async (page, h) => {
   console.log('venda: Ana', JSON.stringify(ga), 'Bob', JSON.stringify(gb));
   if (gb.money !== 700 || gb.bugs.length !== 3 || ga.bugs.length !== 1) throw new Error('venda não fechou certo');
 
-  // 2) Bob põe a Hawaii (já adulta) na lista de venda por $ 900; Ana a vê em FOR SALE e pede para comprar → reserva o
-  //    dinheiro; Bob recusa → devolve; Ana pede de novo e Bob aceita → Hawaii vai para a Ana e o dinheiro para o Bob
+  // 2) Bob põe a Hawaii (já adulta) na lista de venda por $ 900; Ana a vê em FOR SALE e compra → fecha na hora (o anúncio
+  //    já é o aceite): Hawaii vai para a Ana, o dinheiro para o Bob e sai da lista dele; comprar de novo falha
   const hawaii = await b.h.ev(async () => {
     const { Adult_sell } = await import('/src/game/classes/Adult_sell.ts');
     const g = __player.global.GAME;
@@ -56,29 +56,13 @@ export default async (page, h) => {
   await tap(a.h, 'FOR SALE');
   await a.h.shot(OUT + 'trade-3-forsale.png');
   await tapName(a.h, 'buy_' + hawaii);
-  await until(a.h, () => __player.global.GAME.nMoney === 400);
+  await until(a.h, u => __player.global.GAME.nMoney === 400 && __player.global.GAME.aAdult.some(x => x.sUid === u), hawaii);
+  await until(b.h, () => __player.global.GAME.nMoney === 1600 && __player.global.GAME.aAdult_sell.length === 0);
+  await a.h.shot(OUT + 'trade-3-bought.png');
+  const twice = await a.h.ev(async ([s, u]) => { try { await __online.api.buyListed(s, u, 900); return 'comprou'; } catch (e) { return e.message; } }, [bId, hawaii]);
+  console.log('compra direta: Ana 400 com a Hawaii, Bob 1600; comprar de novo:', twice);
+  if (twice !== 'not for sale') throw new Error('o mesmo besouro foi vendido duas vezes');
   await shut(a);
-  await toTrade(b);
-  await tap(b.h, 'OFFERS');
-  await tap(b.h, 'DECLINE', 1200);
-  await until(a.h, () => __player.global.GAME.nMoney === 1300);
-  console.log('compra recusada: dinheiro da Ana voltou para 1300');
-  await shut(b);
-  await toTrade(a);
-  await tap(a.h, 'FOR SALE');
-  console.log('lista de venda vista pela Ana:', JSON.stringify(await a.h.ev(async id => (await __online.api.snapshots([id]))[0].sell.map(s => s.uid + ':' + s.price), bId)), 'esperado', hawaii);
-  await tapName(a.h, 'buy_' + hawaii);
-  await until(a.h, () => __player.global.GAME.nMoney === 400);
-  await shut(a);
-  await toTrade(b);
-  await tap(b.h, 'OFFERS');
-  await tap(b.h, 'ACCEPT', 1200);
-  await until(a.h, u => __player.global.GAME.aAdult.some(x => x.sUid === u), hawaii);
-  await until(b.h, () => __player.global.GAME.nMoney === 1600);
-  const gb2 = await game(b.h);
-  console.log('compra aceita: Bob', JSON.stringify(gb2));
-  if (gb2.sell !== 0) throw new Error('o besouro vendido continuou na lista do Bob');
-  await shut(b);
 
   // 3) Bob oferece Adam de volta e cancela → Adam volta para o Bob
   await b.h.ev(u => { __player.global.GAME.aAdult.find(x => x.sUid === u).nAge_now = 300; }, adam);
@@ -133,5 +117,5 @@ export default async (page, h) => {
   const [ga4, gb4] = [await game(a.h), await game(b.h)];
   console.log('2 por 1: Ana', JSON.stringify(ga4), 'Bob', JSON.stringify(gb4));
   if (ga4.bugs.length !== 3 || gb4.bugs.length !== 1) throw new Error('troca 2 por 1 não fechou certo');
-  console.log('ok: venda, compra (recusa e aceite), cancelamento e troca 2 por 1');
+  console.log('ok: venda, compra direta, cancelamento e troca 2 por 1');
 };

@@ -86,10 +86,8 @@ export const tradeView: View = {
         button(v, 520, y + 8, 'BUY', async () => {
           mustLink();
           if (bug.price > G().nMoney) throw new Error("You don't have enough money!");
-          const { price, ...plain } = bug;
-          await api.createOffer(owner, [], price, [plain], 0);
+          await api.buyListed(owner, bug.uid, bug.price); // anunciado = preço aceito: fecha na hora
           await sync.processInbox();
-          flash('Purchase request sent!');
           refresh();
         }, { scale: 95 }).name = 'buy_' + bug.uid;
       }, 'No bugs for sale in your world.');

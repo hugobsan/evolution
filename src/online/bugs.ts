@@ -94,6 +94,8 @@ export function applyEntry(r: InboxRow): string {
 
 const MSG: Record<string, (r: InboxRow) => string> = {
   offer_accepted: () => 'Trade completed!',
+  bought: () => 'Purchase completed!',
+  sold: r => 'Your bug was sold! +$ ' + r.money,
   offer_declined: () => 'Your offer was declined.',
   match_declined: () => 'Your challenge was declined.',
   match_won: r => 'You won a challenge! +$ ' + r.money,

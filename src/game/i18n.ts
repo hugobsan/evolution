@@ -166,7 +166,8 @@ const EXACT: Record<string, string> = {
   'Pick 1 or 2 bugs. Your friend picks the same number.': 'Escolha 1 ou 2 insetos. Seu amigo escolhe o mesmo número.',
   'Challenge sent!': 'Desafio enviado!', 'Challenges received': 'Desafios recebidos', 'Waiting for your friend': 'Esperando seu amigo',
   'In progress': 'Em andamento', 'Results': 'Resultados', 'Their team': 'Time adversário', 'Your team': 'Seu time',
-  'Trade completed!': 'Troca concluída!', 'Your offer was declined.': 'Sua oferta foi recusada.', 'Your challenge was declined.': 'Seu desafio foi recusado.',
+  'Trade completed!': 'Troca concluída!', 'Purchase completed!': 'Compra concluída!',
+  'not for sale': 'Esse besouro não está mais à venda.', 'price changed': 'O preço mudou. Veja de novo.', 'Your offer was declined.': 'Sua oferta foi recusada.', 'Your challenge was declined.': 'Seu desafio foi recusado.',
   'You lost a challenge.': 'Você perdeu um desafio.', 'A player joined your world!': 'Um jogador entrou no seu mundo!',
   'You were removed from the world.': 'Você foi removido do mundo.', 'The world was ended by its owner.': 'O dono encerrou o mundo.',
   'New trade offer!': 'Nova oferta de troca!', 'New challenge!': 'Novo desafio!', 'Load newer cloud save?': 'Carregar save da nuvem?',
@@ -239,6 +240,7 @@ const PATTERNS: [RegExp, (...m: string[]) => string][] = [
   [/^Pick up to (\d+) bugs\.$/, (_, n) => `Escolha até ${n} insetos.`],
   [/^Create a world and share its code with up to (\d+) friends\.$/, (_, n) => `Crie um mundo e compartilhe o código com até ${n} amigos.`],
   [/^You won a challenge! \+\$ (\d+)$/, (_, n) => `Você venceu um desafio! +$ ${n}`],
+  [/^Your bug was sold! \+\$ (\d+)$/, (_, n) => `Seu besouro foi vendido! +$ ${n}`],
   [/^([A-Z][A-Z ]+) \((\d+)\)$/, (_, a, n) => `${trPlain(a) ?? a} (${n})`], // abas com contagem: "OFFERS (2)"
   [/^Remove (.+) \?$/, (_, n) => `Remover ${n} ?`],
   [/^Official winner: (.+)$/, (_, n) => `Vencedor oficial: ${n}`],

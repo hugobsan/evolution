@@ -68,7 +68,7 @@ Fluxos:
 - *Entrar*: novo jogo → instruções → MULTIPLAYER ligado → nome (ou código de recuperação) e criar mundo / código de um amigo →
   INICIAR JOGO: o jogo novo vira o save na nuvem; o código de recuperação fica em Configurações → CONFIGURAÇÕES DE CONTA.
 - *Oferta*: Troca → TROCAR COM UM AMIGO → escolher "dou" (besouros meus e/ou $) e "quero" (besouros dele e/ou $) → enviar;
-  ou FOR SALE → COMPRAR um besouro da lista de venda dele (pedido de compra: reserva o $; ele aceita ou recusa). O que eu dou
+  ou FOR SALE → COMPRAR um besouro da lista de venda dele (compra direta: o anúncio já é o aceite, fecha na hora pela RPC buy_listed). O que eu dou
   sai do meu jogo na hora (reservado, como a lista de venda da v1); recusar/cancelar devolve.
 - *Desafio*: PvP → DESAFIAR UM AMIGO → 1–3 besouros (luta) ou 1–2 (corrida) + aposta → enviar (aposta reservada). O amigo escolhe o
   mesmo número de besouros (reserva a aposta) → a arena abre e a disputa roda; o vencedor leva 2× a aposta. O

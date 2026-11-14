@@ -188,6 +188,7 @@ export const createOffer = (to: string, giveBugs: Bug[], giveMoney: number, want
   rpc('create_offer', { p_to: to, p_give_bugs: giveBugs, p_give_money: giveMoney, p_want_bugs: wantBugs, p_want_money: wantMoney }) as Promise<number>;
 export const respondOffer = (id: number, accept: boolean, wantBugs: Bug[] = []) =>
   rpc('respond_offer', { p_id: id, p_accept: accept, p_want_bugs: wantBugs });
+export const buyListed = (seller: string, uid: string, price: number) => rpc('buy_listed', { p_seller: seller, p_uid: uid, p_price: price }) as Promise<number>;
 export const cancelOffer = (id: number) => rpc('cancel_offer', { p_id: id });
 export const createMatch = (to: string, kind: 'battle' | 'race', bet: number, team: Bug[]) =>
   rpc('create_match', { p_to: to, p_kind: kind, p_bet: bet, p_team: team }) as Promise<number>;
