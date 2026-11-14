@@ -24,6 +24,16 @@ const part = (bs: Bug[], m: number) => {
   const names = bs.slice(0, 3).map(b => t(b.sNickName)).join(', ') + (bs.length > 3 ? ` +${bs.length - 3}` : '');
   return [names, names && m ? ' + ' : '', m ? money(m) : ''].join('') || '-';
 };
+async function accept(o: Offer) {
+  mustLink();
+  const mine = o.want_bugs.map(b => myBug(b.uid));
+  if (mine.some(b => !b)) throw new Error('You no longer have that bug.');
+  if (o.want_money > G().nMoney) throw new Error("You don't have enough money!");
+  await api.respondOffer(o.id, true, mine.map(bugOf));
+  await sync.processInbox(); await sync.refreshPending();
+}
+const decline = async (o: Offer) => { await api.respondOffer(o.id, false); await sync.refreshPending(); };
+const cancel = async (o: Offer) => { await api.cancelOffer(o.id); await sync.processInbox(); };
 const sexAge = (b: Bug) => `${b.nSex > 0 ? '♂' : '♀'} ${t((b.nAge_now / 10).toFixed(1) + ' Days')}`;
 
 function list<T>(v: MC, items: T[], key: string, y0: number, rowH: number, draw: (it: T, y: number) => void, empty: string) {
@@ -90,28 +100,22 @@ export const tradeView: View = {
         ...os.filter(o => o.status === 'pending' && o.from_user === me).map(o => ({ o, kind: 'out' as const })),
         ...os.filter(o => o.status !== 'pending').slice(0, 8).map(o => ({ o, kind: 'old' as const })),
       ];
-      const accept = async (o: Offer) => {
-        mustLink();
-        const mine = o.want_bugs.map(b => myBug(b.uid));
-        if (mine.some(b => !b)) throw new Error('You no longer have that bug.');
-        if (o.want_money > G().nMoney) throw new Error("You don't have enough money!");
-        await api.respondOffer(o.id, true, mine.map(bugOf));
-        await sync.processInbox(); await sync.refreshPending();
-        refresh();
-      };
       list(v, rows, 'offers', 104, 54, ({ o, kind }, y) => {
         if (kind === 'in') {
           label(v, 36, y, nm(o.from_user), { size: 17 }).name = 'on_' + o.id;
           label(v, 36, y + 24, `${t('gives:')} ${part(o.give_bugs, o.give_money)} — ${t('wants:')} ${part(o.want_bugs, o.want_money)}`, { size: 13 });
-          button(v, 440, y + 6, 'ACCEPT', () => accept(o), { scale: 95 }).name = 'acc_' + o.id;
-          button(v, 528, y + 6, 'DECLINE', async () => { await api.respondOffer(o.id, false); await sync.refreshPending(); refresh(); }, { scale: 95 });
+          button(v, 352, y + 6, 'VIEW', () => show(detailView(o)), { scale: 95 }).name = 'view_' + o.id;
+          button(v, 440, y + 6, 'ACCEPT', async () => { await accept(o); refresh(); }, { scale: 95 }).name = 'acc_' + o.id;
+          button(v, 528, y + 6, 'DECLINE', async () => { await decline(o); refresh(); }, { scale: 95 });
         } else if (kind === 'out') {
           label(v, 36, y, `${t('to')} ${nm(o.to_user)}`, { size: 17 });
           label(v, 36, y + 24, `${t('you give')} ${part(o.give_bugs, o.give_money)} — ${t('you get')} ${part(o.want_bugs, o.want_money)}`, { size: 13 });
-          button(v, 528, y + 6, 'CANCEL', async () => { await api.cancelOffer(o.id); await sync.processInbox(); refresh(); }, { scale: 95 });
+          button(v, 440, y + 6, 'VIEW', () => show(detailView(o)), { scale: 95 }).name = 'view_' + o.id;
+          button(v, 528, y + 6, 'CANCEL', async () => { await cancel(o); refresh(); }, { scale: 95 });
         } else {
           label(v, 36, y, `${nm(o.from_user)} → ${nm(o.to_user)}`, { size: 15, color: 0x3a4a5c });
           label(v, 36, y + 22, `${part(o.give_bugs, o.give_money)} ⇄ ${part(o.want_bugs, o.want_money)} · ${t(o.status)}`, { size: 13, color: 0x3a4a5c });
+          button(v, 528, y + 6, 'VIEW', () => show(detailView(o)), { scale: 95 }).name = 'view_' + o.id;
         }
       }, 'No offers.');
     } else {
@@ -175,4 +179,34 @@ function offerView(id: string): View {
     },
   };
   return ov;
+}
+
+// ───────────── ver uma oferta (mesmo layout da proposta, só leitura) ─────────────
+function detailView(o: Offer): View {
+  return {
+    title: 'TRADE',
+    back: tradeView,
+    load: async () => { await nameOf([o.from_user, o.to_user]); return {}; },
+    build(v) {
+      const me = sync.uid(), inc = o.to_user === me, pending = o.status === 'pending';
+      label(v, 40, 62, `${nm(o.from_user)} → ${nm(o.to_user)} · ${t(o.status)}`, { size: 18 });
+      const box = infoBox(v);
+      const over = (b: Bug) => box?.setFrame?.('battle', battleOb(b));
+      // esquerda o que eu dou, direita o que eu recebo (como na proposta)
+      const side = (x: number, title: string, bugs: Bug[], m: number) => {
+        panel(v, x, 92, 295, 238);
+        label(v, x + 10, 94, title, { size: 14 });
+        bugGrid(v, bugs, x + 34, 148, { pitch: 62, scale: 90, over });
+        if (m) label(v, x + 10, 302, `+ ${money(m)}`, { size: 16, color: 0x0a2a5c });
+      };
+      side(20, 'You give', inc ? o.want_bugs : o.give_bugs, inc ? o.want_money : o.give_money);
+      side(325, 'You get', inc ? o.give_bugs : o.want_bugs, inc ? o.give_money : o.want_money);
+      if (!pending) return;
+      const done = () => { tab = 'offers'; show(tradeView); };
+      if (inc) {
+        button(v, 20, 366, 'ACCEPT', async () => { await accept(o); done(); });
+        button(v, 140, 366, 'DECLINE', async () => { await decline(o); done(); });
+      } else button(v, 20, 366, 'CANCEL', async () => { await cancel(o); done(); });
+    },
+  };
 }

@@ -96,6 +96,10 @@ export default async (page, h) => {
   const again = await b.h.ev(async () => { const os = await __online.api.offers(); try { await __online.api.respondOffer(os.find(o => o.status !== 'pending').id, true); return 'aceitou'; } catch (e) { return e.message; } });
   console.log('reaceitar oferta resolvida:', again);
   if (again === 'aceitou') throw new Error('oferta resolvida foi aceita de novo');
+  // aba com versão antiga (função do banco que não existe mais): aviso para recarregar, não o erro do PostgREST
+  const stale = await b.h.ev(async () => { try { await __online.api.rpcRaw('respond_offer', { p_id: 1, p_accept: true, p_want_bug: null }); return 'passou'; } catch (e) { return e.message; } });
+  console.log('versão antiga:', stale);
+  if (!/updated/.test(stale)) throw new Error('chamada de versão antiga não virou aviso de atualização');
 
   // 4) troca 2 por 1: Bob dá os dois besouros dele e pede a Hawaii da Ana
   await shut(b);
@@ -116,6 +120,13 @@ export default async (page, h) => {
   await toTrade(a);
   await tap(a.h, 'OFFERS');
   await a.h.shot(OUT + 'trade-5-multi-received.png');
+  // VER: a oferta no layout da proposta (esquerda o que a Ana dá, direita o que recebe) e aceite por essa tela
+  const oid = await a.h.ev(async () => (await __online.api.offers()).find(o => o.status === 'pending').id);
+  await tapName(a.h, 'view_' + oid);
+  const seen = await a.h.ev(() => __player.root.mGame.mOnline.v.children.filter(c => c.name?.startsWith('bug_')).map(c => c.name.slice(4)));
+  await a.h.shot(OUT + 'trade-5-multi-view.png');
+  console.log('VER: besouros na tela', seen.length);
+  if (![...bobs, hawaii].every(u => seen.includes(u))) throw new Error('a tela da oferta não mostra os besouros dos dois lados');
   await tap(a.h, 'ACCEPT', 1200);
   await until(a.h, us => us.every(u => __player.global.GAME.aAdult.some(x => x.sUid === u)), bobs);
   await until(b.h, u => __player.global.GAME.aAdult.some(x => x.sUid === u), hawaii);

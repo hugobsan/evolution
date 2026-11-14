@@ -54,10 +54,13 @@ export async function loadMe() {
 
 /** erro do Supabase → Error com a mensagem do servidor (as RPCs usam mensagens curtas em inglês) */
 function chk(r: { data: any; error: any }): any {
+  // função do banco não encontrada: a aba roda uma versão antiga do jogo (o deploy trocou a API)
+  if (r.error?.code === 'PGRST202') throw new Error('The game was updated. Reload the page to continue.');
   if (r.error) { const e: any = new Error(r.error.message || String(r.error)); e.hint = r.error.hint; e.details = r.error.details; throw e; }
   return r.data;
 }
 const rpc = async (fn: string, args: Record<string, any> = {}) => chk(await (await client()).rpc(fn, args));
+export const rpcRaw = rpc; // testes
 
 // ── identidade: usuário anônimo + código de recuperação ──
 // O código (24 caracteres base32 Crockford) codifica um e-mail sintético não entregável (8 primeiros) e uma senha
