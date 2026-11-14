@@ -72,7 +72,7 @@ function wrapInfoLines(info: any, on: boolean) {
     if (!t) return;
     const nextEmpty = on && [1, 2].slice(0, 2 - k).every(j => !String(info.ob?.["s_" + (k + j)] ?? "").trim());
     t.wordWrap = nextEmpty && k < 2;
-    if (t.wordWrap) t.rect.w = 330; // largura útil do painel preto (o fundo fica no clip pai)
+    if (t.wordWrap) t.rect.w = 320; // largura útil do painel preto (v2: o painel recuou para a coluna de botões novos)
     t.changed();
   });
 }
@@ -1636,7 +1636,7 @@ export const clipActions: ClipActions = {
   '434:38:195': { load() { this._x = 215; } },
   '434:38:197': { load() { this._x = 215; } },
   '434:38:199': {
-    load() { this._x = 380; },
+    load() { this._x = 355; }, // v2: um pouco mais à esquerda (a coluna de botões do multiplayer ocupa a direita)
     release() {
       _global.GAME?.stop();
       switch (_global.GAME?.nInterval) {

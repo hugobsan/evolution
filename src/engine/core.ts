@@ -457,6 +457,7 @@ export class TextField extends DisplayObject {
     this.lastVar = this.text;
   }
   setInputValue(v: string) {
+    if (this.input && this.input.value !== v) this.input.value = v; // mantém o <input> sobreposto igual ao texto
     this.src = v; this.srcHtml = false; this.changed(); this.pushVar();
     if (typeof this.onChanged === 'function') this.onChanged.call(this, this);
   }

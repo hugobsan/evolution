@@ -1,43 +1,27 @@
-// v2: camada online. Liga-se ao jogo por fora: embrulha os frame scripts das telas do jogo (sprite 434) e põe o botão
-// ONLINE (sprite 57, o botão padrão do jogo) no canto. Sem login, nada de rede é carregado.
+// v2: camada online. Liga-se ao jogo por fora: embrulha os frame scripts das telas do jogo (sprite 434 e 404) e põe os
+// botões do multiplayer no HUD (hud.ts); as telas (kit.ts) seguem o estilo das telas modais do jogo. Sem login, nada de
+// rede é carregado.
 import { _global } from '../engine/as2';
 import { frameScripts } from '../game/timeline';
 import * as api from './api';
 import * as sync from './sync';
 import * as shop from './shop';
 import * as match from './match';
-import * as ui from './ui';
-
-const BUTTON = 57;
-let hud: any = null;
-
-function label() { return ' ONLINE' + (sync.state.pending ? ` (${sync.state.pending})` : '') + ' '; }
-function addButton(mc: any) {
-  hud = mc.attachSymbol(BUTTON, 'btOnline', 450, {
-    _sLabel: label(), _bOn: true, autoSize: 'left', bAni_visible: true, enabled: true, sSwitch: '', sPop: '', y_tPop: -50,
-  }, true);
-  if (!hud) return;
-  hud.onrelease = () => ui.open();
-  place();
-}
-function place() {
-  if (!hud || hud.removed) return;
-  hud._x = 632 - hud._width;
-  hud._y = 8;
-}
-sync.onState(() => {
-  if (!hud || hud.removed) return;
-  hud.sLabel = label();
-  hud.Frame?.();
-  place();
-});
+import * as kit from './kit';
+import * as hud from './hud';
+import { installIcons } from './icons';
+import { setAuthHooks, buildSettings } from './account';
+import { worldView } from './world';
+import { friendsView, profileView } from './friends';
+import { pvpView } from './pvp';
+import { tradeView } from './trade';
 
 function screen(mc: any, kind: 'home' | 'arena' | 'shop' | 'match' | 'menu') {
   if (kind !== 'match') match.leave();
   shop.setHere(kind === 'shop');
-  if (kind === 'menu') { ui.close(); return; }
+  if (kind === 'menu') { kit.close(false, false); return; }
   if (kind === 'match') return;
-  addButton(mc);
+  hud.installHud(mc, kind);
   if (api.session) { sync.processInbox(); sync.pushNow(); }
 }
 
@@ -49,26 +33,29 @@ async function boot() {
 }
 
 export function installOnline() {
-  const wrap = (fr: number, after: (mc: any) => void) => {
-    const f = frameScripts[434][fr];
-    frameScripts[434][fr] = (mc: any) => { f?.(mc); after(mc); };
+  installIcons();
+  const wrap = (sprite: number, fr: number, after: (mc: any) => void) => {
+    const f = frameScripts[sprite][fr];
+    frameScripts[sprite][fr] = (mc: any) => { f?.(mc); after(mc); };
   };
-  wrap(6, mc => screen(mc, 'menu'));
-  wrap(38, mc => screen(mc, 'home'));
-  wrap(43, mc => screen(mc, 'arena'));
-  wrap(46, mc => screen(mc, 'shop'));
-  wrap(49, mc => screen(mc, 'match'));
-  wrap(52, mc => screen(mc, 'match'));
-  shop.setProfileOpener(ui.openProfile);
-  ui.setAuthHooks(
+  wrap(434, 6, mc => screen(mc, 'menu'));
+  wrap(434, 38, mc => screen(mc, 'home'));
+  wrap(434, 43, mc => screen(mc, 'arena'));
+  wrap(434, 46, mc => screen(mc, 'shop'));
+  wrap(434, 49, mc => screen(mc, 'match'));
+  wrap(434, 52, mc => screen(mc, 'match'));
+  wrap(404, 5, mc => buildSettings(mc)); // conta online na tela de Configurações (no jogo e no menu inicial)
+  const views = { world: worldView, friends: friendsView, pvp: pvpView, trade: tradeView };
+  hud.setOpener(id => kit.open(views[id]));
+  shop.setProfileOpener(id => kit.open(profileView(id, null)));
+  setAuthHooks(
     async () => {
       await boot();
-      // primeiro acesso: o jogo aberto vira o save na nuvem (com save já existente, o painel pergunta)
+      // primeiro acesso: o jogo aberto vira o save na nuvem (com save já existente, a tela de Configurações pergunta)
       if (_global.GAME && !sync.linked() && !(await api.getSave())) await sync.linkThisGame();
-      ui.open(undefined, 'account');
     },
     async () => { sync.disconnect(); shop.disconnect(); await sync.refreshPending(); },
   );
   if (api.hasStoredSession()) boot();
-  if (import.meta.env.DEV) (window as any).__online = { api, sync, shop, match, ui };
+  if (import.meta.env.DEV) (window as any).__online = { api, sync, shop, match, kit };
 }
