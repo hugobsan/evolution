@@ -1,6 +1,6 @@
 name: Deploy v2 + v1 (GitHub Pages)
-# v2 multiplayer (branch v2) na raiz; v1 offline (branch main) em /v1/; /v2/ redireciona para a raiz (links antigos).
-# Mudou só a branch v2? Rode este workflow manualmente (Actions → Run workflow): ele sempre builda as duas branches.
+# v2 multiplayer (branch main) na raiz; v1 offline (branch v1) em /v1/; /v2/ redireciona para a raiz (links antigos).
+# Mudou só a branch v1? Rode este workflow manualmente (Actions → Run workflow): ele sempre builda as duas branches.
 on:
   push:
     branches: [main]
@@ -21,10 +21,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: v2
+          ref: main
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: v1
           path: v1src
       - uses: actions/setup-node@v4
         with:
