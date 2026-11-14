@@ -181,7 +181,7 @@ async function nameOf(ids: string[]) {
 const nm = (id: string) => names.get(id) ?? t('(former member)');
 
 function needLink(): Kid {
-  return sync.linked() ? null : el('p', { class: 'evo-msg err' }, t('Link this game to your account first.'), ' ', btn('ACCOUNT', () => open(viewAccount, 'account')));
+  return sync.linked() ? null : el('p', { class: 'evo-msg err' }, t('Link this game to your player first.'), ' ', btn('ACCOUNT', () => open(viewAccount, 'account')));
 }
 
 // ───────────── besouros ─────────────

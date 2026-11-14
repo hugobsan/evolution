@@ -25,7 +25,7 @@ export async function waitMsg(page, text) {
 export async function startOnline(h, prefix) {
   const page = h.page;
   const name = 'qa-' + prefix + rid();
-  await h.ev(() => __lang.set(globalThis.LANG_PT ? 'pt' : 'en')); // os seletores usam os rótulos em inglês
+  await h.ev(() => __lang.set('en')); // os seletores usam os rótulos em inglês
   await h.newGame(prefix);
   await openPanel(h);
   await page.fill('#evo-name', name);

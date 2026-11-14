@@ -74,7 +74,7 @@ export function applyEntry(r: InboxRow): string {
   for (const b of r.add_bugs ?? []) if (addBug(b) === 'sell') full = true;
   if (r.money) g.setMoney(r.money);
   const msg = MSG[r.kind]?.(r) ?? '';
-  return full ? (msg ? msg + ' ' : '') + 'Tank full: the bug went to your sell list!' : msg;
+  return full ? 'Tank full: the bug went to your sell list!' : msg;
 }
 
 const MSG: Record<string, (r: InboxRow) => string> = {

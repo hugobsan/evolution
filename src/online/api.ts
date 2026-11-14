@@ -94,7 +94,9 @@ async function captchaToken(): Promise<string | undefined> {
 }
 
 /** novo jogador online: entra só com o nome; em seguida cria o código de recuperação */
+const checkName = (n: string) => { if (n.trim().length < 2 || n.trim().length > 16) throw new Error('Name: 2 to 16 characters.'); };
 export async function start(name: string) {
+  checkName(name);
   const c = await client();
   chk(await c.auth.signInAnonymously({ options: { data: { username: name.trim() }, captchaToken: await captchaToken() } }));
   session = (await c.auth.getSession()).data.session;
@@ -124,6 +126,7 @@ export async function recover(code: string) {
 }
 export async function signOut() { await (await client()).auth.signOut(); session = null; me = null; storeCode(null); }
 export async function rename(name: string) {
+  checkName(name);
   chk(await (await client()).from('profiles').update({ username: name.trim() }).eq('id', session!.user.id));
   await loadMe();
 }
