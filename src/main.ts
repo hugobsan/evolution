@@ -5,6 +5,7 @@ import { constructVars } from './game/construct.gen';
 import { addMuteButton } from './game/muteButton';
 import { installI18n } from './game/i18n';
 import { installOnline } from './online';
+import * as fence from './game/fence';
 
 const BASE = import.meta.env.BASE_URL + 'assets/';
 
@@ -23,8 +24,9 @@ async function boot() {
     const mg = (p.root as any).mGame;
     return _global.GAME?.nScreen === 0 && mg?.cur === 38 && mg.mBar?._currentframe == 1 && !mg.mOnline ? mg.mGround ?? null : null;
   };
-  if (import.meta.env.DEV) { (window as any).__player = p; (await import('./devtools')).installDevtools(p); }
+  if (import.meta.env.DEV) { (window as any).__player = p; (window as any).__fence = fence; (await import('./devtools')).installDevtools(p); }
   installI18n(); // idioma: navegador/escolha salva; hook de tradução na exibição
+  fence.installFence(p); // cercas: botão direito/modo cerca desenham, insetos não atravessam
   installOnline(); // v2: amigos, trocas, desafios e presença (só carrega a rede com login)
   p.start();
   addMuteButton(p, stage);

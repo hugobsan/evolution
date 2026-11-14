@@ -8,6 +8,7 @@ import { Food } from './Food';
 import { Feces } from './Feces';
 import { Sellman } from './Sellman';
 import { Battleman } from './Battleman';
+import { buildFences } from '../fence';
 
 export class Game {
    [k: string]: any;
@@ -23,6 +24,7 @@ export class Game {
       this.aFood = new Array();
       this.aAdorn = new Array();
       this.aFeces = new Array();
+      this.aFence = new Array(); // novo: cercas do insetário [[x1,y1,x2,y2]]; saves antigos não têm
       this.aBug_have = new Array();
       this.aFood_have = new Array(20,0,0,0);
       this.addAdult(0,{sNickName:"Adam",nSex:1});
@@ -170,6 +172,7 @@ export class Game {
       {
          this.aFeces[_loc2_].setClip(SFM.addClip("feces",this.mClip?.mGround?.mHit_1));
       }
+      buildFences();
       if(this.nTime == 0)
       {
          SFM.addClip("mFirst",this.mClip);

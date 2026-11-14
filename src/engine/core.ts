@@ -703,6 +703,7 @@ export class Player {
     this.canvas = document.createElement('canvas');
     this.canvas.style.display = 'block';
     this.canvas.style.touchAction = 'none';
+    this.canvas.addEventListener('contextmenu', e => e.preventDefault()); // botão direito é do jogo (cercas), não do navegador
     container.appendChild(this.canvas);
     this.overlay = container;
     this.ctx = this.canvas.getContext('2d')!;
@@ -1211,7 +1212,9 @@ export class Player {
         this.touches.set(e.pointerId, this.stageXY(e));
         if (this.pinch) { this.movePinch(); return; }
       }
-      pos(e); this.ctrlDown = e.ctrlKey; this.run(() => { this.updateDrag(); this.updateHover(); });
+      pos(e); this.ctrlDown = e.ctrlKey;
+      if (this.inputHook?.('move', e)) return;
+      this.run(() => { this.updateDrag(); this.updateHover(); });
     });
     addEventListener('keydown', e => { if (e.key === 'Control') this.ctrlDown = true; });
     addEventListener('keyup', e => { if (e.key === 'Control') { this.ctrlDown = false; this.run(() => this.updateDrag()); } });
@@ -1223,6 +1226,7 @@ export class Player {
       }
       pos(e);
       this.pointerType = e.pointerType; // 'touch' | 'mouse' | 'pen' ('' em cliques simulados): o jogo diferencia o toque
+      if (this.inputHook?.('down', e)) { e.preventDefault(); return; }
       this.audio.resume();
       if (document.activeElement instanceof HTMLInputElement) document.activeElement.blur();
       this.run(() => {
@@ -1238,6 +1242,7 @@ export class Player {
         return; // dedos da pinça não soltam nada no jogo
       }
       pos(e);
+      if (this.inputHook?.('up', e)) return;
       this.run(() => this.release());
     };
     addEventListener('pointerup', up);
@@ -1271,6 +1276,7 @@ export class Player {
   private startPinch(): boolean {
     const o = this.zoomTarget?.();
     if (!o) return false;
+    this.inputHook?.('cancel'); // o 1º dedo estava desenhando (cerca): a pinça descarta o traço
     // o 1º dedo já pode ter pegado um besouro: solta onde está, antes de virar pinça
     this.run(() => this.release());
     if (this.zoom?.o !== o) this.zoom = { o, base: o.m.slice() as Mat, s: 1, tx: 0, ty: 0 };
@@ -1335,6 +1341,9 @@ export class Player {
     this.updateDrag();
   }
   stopDrag() { this.drag = null; }
+  /** extensão (cercas): vê os ponteiros antes do jogo; devolver true consome o evento (o jogo não recebe aperto/solto/hover).
+   *  'cancel' = a pinça começou. */
+  inputHook: ((type: 'down' | 'move' | 'up' | 'cancel', e?: PointerEvent) => boolean) | null = null;
   /** tipo do ponteiro do último pressionar (extensão): no celular o toque não tem hover */
   pointerType = '';
   /** extensão (não existe no Flash): Ctrl + mover o mouse na vertical gira o objeto arrastado */

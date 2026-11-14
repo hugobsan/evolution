@@ -2,6 +2,7 @@ import { _global, _root, random, int, forIn } from '../../engine/as2';
 import { Vector } from './Vector';
 import { SFM } from './SFM';
 import { Mycolor } from './Mycolor';
+import { fenceHit } from '../fence';
 
 export class Adult {
   [k: string]: any;
@@ -150,6 +151,7 @@ export class Adult {
     Math.random() > _n2 && this.mClip?.mBoot?.play();
   }
   move() {
+    const _ox = this.vCurr.x, _oy = this.vCurr.y;
     switch (this.nStatement) {
       case 1:
         if (!this.bBattle) {
@@ -182,6 +184,16 @@ export class Adult {
       case 8:
     }
     if (this.nStatement != 8) {
+      // novo: cercas do insetário (andando ou voando). Bateu: volta ao ponto anterior e vira como um quique (reflexo no
+      // ângulo da cerca, com um tremor aleatório) e, por 3 ciclos de andar (~3 s), não tenta voltar ao alvo, senão
+      // iria e voltaria na cerca. O arrasto do jogador (estado 8) não passa por aqui: ignora as cercas.
+      const _fa = fenceHit(_ox, _oy, this.vCurr.x, this.vCurr.y);
+      if (_fa !== null) {
+        this.vCurr.setTo(_ox, _oy);
+        this.nRot = SFM.Rfloor(2 * _fa - this.nRot + SFM.rdm_2(-0.3, 0.3));
+        this.nDir = 0;
+        this.nFenceT = 3;
+      }
       this.moveClip();
     }
     return true;
@@ -239,6 +251,7 @@ export class Adult {
     return false;
   }
   walk(_v?) {
+    this.nFenceT > 0 && this.nFenceT--;
     const _loc3_ = this.getHit_2(_global.GAME.mClip?.mGround?.mHit_0);
     if (_loc3_ != 2) {
       this.nDir = _loc3_;
@@ -250,7 +263,7 @@ export class Adult {
       this.bHit = true;
     } else {
       this.bHit = false;
-      if (_v != undefined) {
+      if (_v != undefined && !(this.nFenceT > 0)) {
         _loc4_ = SFM.Rfloor(Math.atan2(_v.vCurr?.y - this.vCurr.y, _v.vCurr?.x - this.vCurr.x) - this.nRot);
         if (Math.abs(_loc4_) > 0.1) {
           this.nDir = SFM.vpNum(-_loc4_, 1);

@@ -105,7 +105,12 @@ const EXACT: Record<string, string> = {
   // painel de informação (rótulos; o trecho colorido vem em outro segmento)
   'Apple :': 'Maçã :', 'Watermelon :': 'Melancia :', 'Grape :': 'Uva :', 'Drug :': 'Droga :',
   'Toys :': 'Brinquedos :', 'Time remaining :': 'Tempo restante :', "Bug's poo :": 'Cocô do inseto :', 'Click to clean it!': 'Clique para limpar!',
-  'Hint :': 'Dica :', 'Hint:': 'Dica:', 'Too much bug poo will make bugs unhappy!': 'Cocô demais deixa os insetos infelizes!',
+  'Hint :': 'Dica :', 'Hint:': 'Dica:',
+  // cercas do insetário
+  'Fence :': 'Cerca :', 'Fence mode :': 'Modo cerca :', 'Drag it onto the trash to remove it!': 'Arraste até a lixeira para remover!',
+  'Right-click and drag to build fences!': 'Botão direito e arraste para fazer cercas!',
+  'Drag on the ground to build fences!': 'Arraste no chão para fazer cercas!', 'Tap again to move the bugs as usual.': 'Toque de novo para mover os insetos como antes.',
+  'There are too many fences!': 'Há cercas demais!', 'Too much bug poo will make bugs unhappy!': 'Cocô demais deixa os insetos infelizes!',
   'Amount remaining :': 'Quantidade restante :', 'Number remaining :': 'Quantidade restante :',
   'Your shop :': 'Sua loja :', 'Change game speed!': 'Mudar a velocidade do jogo!',
   'Breeding lab :': 'Laboratório de cruzamento :', 'Get new bug babies!': 'Tenha novos filhotes!',
