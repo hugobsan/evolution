@@ -17,6 +17,7 @@ import { pvpView } from './pvp';
 import { tradeView } from './trade';
 import * as creation from './creation';
 import { installEscape } from '../game/escape';
+import { pyramid } from './pyramid';
 
 function screen(mc: any, kind: 'home' | 'arena' | 'shop' | 'match' | 'menu') {
   // botão SPEED do HUD (434:38:199): o tempo só passa no insetário; na loja/arena/disputa ele não faz nada
@@ -51,6 +52,7 @@ export function installOnline() {
   wrap(434, 46, mc => screen(mc, 'shop'));
   wrap(434, 49, mc => screen(mc, 'match'));
   wrap(434, 52, mc => screen(mc, 'match'));
+  wrap(404, 7, mc => pyramid(mc)); // pirâmide interativa + "?" com as chances de cruzamento
   wrap(404, 5, mc => buildSettings(mc)); // conta online na tela de Configurações (só em jogo multiplayer)
   wrap(434, 32, mc => creation.build(mc)); // toggle MULTIPLAYER na tela de novo jogo (instruções)
   creation.install(boot);
